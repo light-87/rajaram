@@ -25,7 +25,7 @@ export default function LoansPage() {
         .single();
 
       if (!error && data) {
-        setLoan(data);
+        setLoan(data as Loan);
       }
     } catch (error) {
       console.error("Error fetching loan:", error);

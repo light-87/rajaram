@@ -40,9 +40,10 @@ export default function LoanSetupForm({ onLoanCreated }: LoanSetupFormProps) {
         .single();
 
       if (error) throw error;
+      if (!data) throw new Error("No data returned from insert");
 
       showToast("Loan initialized successfully!", "success");
-      onLoanCreated(data);
+      onLoanCreated(data as Loan);
     } catch (error) {
       console.error("Error creating loan:", error);
       showToast("Failed to initialize loan", "error");
