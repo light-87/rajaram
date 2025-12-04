@@ -42,8 +42,16 @@ export default function LoanSetupForm({ onLoanCreated }: LoanSetupFormProps) {
       if (error) throw error;
       if (!data) throw new Error("No data returned from insert");
 
+      // Convert numeric string values to actual numbers
+      const normalizedLoan: Loan = {
+        ...data,
+        initial_principal: parseFloat(data.initial_principal),
+        current_balance: parseFloat(data.current_balance),
+        interest_rate: parseFloat(data.interest_rate),
+      } as Loan;
+
       showToast("Loan initialized successfully!", "success");
-      onLoanCreated(data as Loan);
+      onLoanCreated(normalizedLoan);
     } catch (error) {
       console.error("Error creating loan:", error);
       showToast("Failed to initialize loan", "error");

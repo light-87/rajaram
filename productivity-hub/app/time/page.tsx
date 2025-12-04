@@ -26,7 +26,13 @@ export default function TimePage() {
         .order("date", { ascending: false });
 
       if (!error && data) {
-        setEntries(data);
+        // Convert numeric string values to actual numbers
+        const normalizedEntries = data.map((entry: any) => ({
+          ...entry,
+          hours: parseFloat(entry.hours),
+          effort_points: parseFloat(entry.effort_points),
+        }));
+        setEntries(normalizedEntries);
       }
     } catch (error) {
       console.error("Error fetching time entries:", error);
