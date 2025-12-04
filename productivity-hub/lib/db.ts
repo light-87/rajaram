@@ -4,8 +4,9 @@ const sql = neon(process.env.NEXT_PUBLIC_DATABASE_URL!);
 
 // Helper function to execute SQL queries with parameters
 async function executeQuery(query: string, params: any[] = []) {
-  // @ts-ignore - Neon's sql function supports string queries with params
-  return await sql(query, params);
+  // Neon requires using sql.query() for parameterized queries
+  // @ts-ignore - TypeScript types may not include query method
+  return await sql.query(query, params);
 }
 
 /**
