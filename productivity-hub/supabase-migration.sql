@@ -40,7 +40,7 @@ CREATE TABLE time_entries (
   date DATE NOT NULL,
   category TEXT CHECK (category IN ('UK Job', 'Solar App', 'Factory App', 'Personal', 'Uni', 'Gym')) NOT NULL,
   hours DECIMAL(5, 2) NOT NULL,
-  effort_points INTEGER NOT NULL,
+  effort_points DECIMAL(5, 2) NOT NULL,
   description TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
