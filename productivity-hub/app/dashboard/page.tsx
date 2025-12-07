@@ -306,17 +306,17 @@ export default function DashboardPage() {
       // Revenue due today
       const today = format(new Date(), "yyyy-MM-dd");
       const revenueDueToday = clients
-        ?.filter(c => c.next_payment_date === today)
+        ?.filter((c: any) => c.next_payment_date === today)
         ?.reduce((sum: number, c: any) => sum + parseFloat(c.contract_value || "0"), 0) || 0;
 
       // Upcoming payments (next 7 days)
       const sevenDaysLater = format(addDays(new Date(), 7), "yyyy-MM-dd");
       const upcomingPayments = clients
-        ?.filter(c => {
+        ?.filter((c: any) => {
           if (!c.next_payment_date) return false;
           return c.next_payment_date >= today && c.next_payment_date <= sevenDaysLater;
         })
-        ?.sort((a, b) => (a.next_payment_date || "").localeCompare(b.next_payment_date || "")) || [];
+        ?.sort((a: any, b: any) => (a.next_payment_date || "").localeCompare(b.next_payment_date || "")) || [];
 
       return { totalARR, revenueDueToday, upcomingPayments, activeClients };
     } catch (error) {
