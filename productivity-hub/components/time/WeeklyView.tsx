@@ -22,6 +22,8 @@ export default function WeeklyView({ entries }: WeeklyViewProps) {
     });
   }, [currentWeekStart]);
 
+  const DAILY_GOAL = 10; // 10 hours per day
+
   const weekData = useMemo(() => {
     return weekDays.map((date) => {
       const dayEntries = entries.filter((e) => e.date === date);
@@ -31,7 +33,7 @@ export default function WeeklyView({ entries }: WeeklyViewProps) {
         day: format(new Date(date), "EEE"),
         date,
         points: Number(points.toFixed(1)), // Round to 1 decimal place
-        meetsGoal: points >= 50,
+        meetsGoal: points >= DAILY_GOAL,
       };
     });
   }, [weekDays, entries]);
@@ -75,15 +77,15 @@ export default function WeeklyView({ entries }: WeeklyViewProps) {
 
       <div className="grid grid-cols-3 gap-4">
         <div className="p-4 rounded-lg bg-background border border-border text-center">
-          <p className="text-sm text-text-secondary mb-1">Total Points</p>
-          <p className="text-2xl font-bold text-text-primary">{totalPoints}</p>
+          <p className="text-sm text-text-secondary mb-1">Total Hours</p>
+          <p className="text-2xl font-bold text-text-primary">{totalPoints.toFixed(1)}</p>
         </div>
         <div className="p-4 rounded-lg bg-background border border-border text-center">
           <p className="text-sm text-text-secondary mb-1">Daily Average</p>
-          <p className="text-2xl font-bold text-text-primary">{avgPoints.toFixed(1)}</p>
+          <p className="text-2xl font-bold text-text-primary">{avgPoints.toFixed(1)} hrs</p>
         </div>
         <div className="p-4 rounded-lg bg-background border border-border text-center">
-          <p className="text-sm text-text-secondary mb-1">Days ≥ 50</p>
+          <p className="text-sm text-text-secondary mb-1">Days ≥ {DAILY_GOAL}hrs</p>
           <p className="text-2xl font-bold text-accent-success">{daysMetGoal}/7</p>
         </div>
       </div>
@@ -92,11 +94,11 @@ export default function WeeklyView({ entries }: WeeklyViewProps) {
       <div className="mt-4 flex items-center justify-center gap-4 text-sm">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-accent-success" />
-          <span className="text-text-secondary">≥ 50 points</span>
+          <span className="text-text-secondary">≥ {DAILY_GOAL} hours</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-accent-primary" />
-          <span className="text-text-secondary">&lt; 50 points</span>
+          <span className="text-text-secondary">&lt; {DAILY_GOAL} hours</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rounded bg-gray-600" />
