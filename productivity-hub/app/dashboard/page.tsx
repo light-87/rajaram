@@ -282,7 +282,7 @@ export default function DashboardPage() {
 
       // Calculate ARR
       let totalARR = 0;
-      clients?.forEach((client) => {
+      clients?.forEach((client: any) => {
         const value = parseFloat(client.contract_value || "0");
         const frequency = client.payment_frequency;
 
