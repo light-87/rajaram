@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { JournalEntry } from "@/types/database";
 import Button from "@/components/ui/Button";
@@ -29,11 +29,7 @@ export default function JournalEntryForm({ onEntryAdded }: JournalEntryFormProps
   });
 
   // Check if entry exists for selected date
-  useEffect(() => {
-    checkExistingEntry();
-  }, [formData.date]);
-
-  const checkExistingEntry = async () => {
+  const checkExistingEntry = useCallback(async () => {
     setIsChecking(true);
     try {
       const { data, error } = await supabase
@@ -43,12 +39,14 @@ export default function JournalEntryForm({ onEntryAdded }: JournalEntryFormProps
         .single();
 
       if (data && !error) {
-        setExistingEntry(data);
+        // Type assertion since Supabase returns generic object
+        const entry = data as JournalEntry;
+        setExistingEntry(entry);
         setFormData({
           date: formData.date,
-          content: data.content,
-          mood: data.mood,
-          energy: data.energy,
+          content: entry.content,
+          mood: entry.mood,
+          energy: entry.energy,
         });
       } else {
         setExistingEntry(null);
@@ -67,7 +65,11 @@ export default function JournalEntryForm({ onEntryAdded }: JournalEntryFormProps
     } finally {
       setIsChecking(false);
     }
-  };
+  }, [formData.date, formData.content, formData.mood, formData.energy]);
+
+  useEffect(() => {
+    checkExistingEntry();
+  }, [checkExistingEntry]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
