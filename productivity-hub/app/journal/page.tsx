@@ -24,7 +24,20 @@ export default function JournalPage() {
         .order("entry_date", { ascending: false });
 
       if (!error && data) {
-        setEntries(data);
+        // Normalize dates to ensure consistent format
+        const normalizedEntries = data.map((entry: any) => {
+          let normalizedDate = entry.entry_date;
+          if (entry.entry_date instanceof Date) {
+            normalizedDate = entry.entry_date.toISOString().split('T')[0];
+          } else if (typeof entry.entry_date === 'string' && entry.entry_date.includes('T')) {
+            normalizedDate = entry.entry_date.split('T')[0];
+          }
+          return {
+            ...entry,
+            entry_date: normalizedDate,
+          };
+        });
+        setEntries(normalizedEntries);
       }
     } catch (error) {
       console.error("Error fetching journal entries:", error);

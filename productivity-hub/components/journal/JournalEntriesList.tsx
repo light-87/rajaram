@@ -36,6 +36,23 @@ export default function JournalEntriesList({ entries }: JournalEntriesListProps)
     setExpandedId(expandedId === id ? null : id);
   };
 
+  const formatEntryDate = (dateValue: string | Date) => {
+    try {
+      // If it's already a Date object, use it directly
+      if (dateValue instanceof Date) {
+        return format(dateValue, "EEEE, MMMM d, yyyy");
+      }
+      // If it's a string, parse it
+      if (typeof dateValue === 'string') {
+        return format(parseISO(dateValue), "EEEE, MMMM d, yyyy");
+      }
+      return "Invalid date";
+    } catch (error) {
+      console.error("Error formatting date:", error, dateValue);
+      return "Invalid date";
+    }
+  };
+
   return (
     <div className="card p-6">
       <h2 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
@@ -63,7 +80,7 @@ export default function JournalEntriesList({ entries }: JournalEntriesListProps)
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-sm font-semibold text-text-primary">
-                        {format(parseISO(entry.entry_date), "EEEE, MMMM d, yyyy")}
+                        {formatEntryDate(entry.entry_date)}
                       </h3>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1 px-2 py-1 bg-accent-secondary/10 rounded-lg border border-accent-secondary/30">
