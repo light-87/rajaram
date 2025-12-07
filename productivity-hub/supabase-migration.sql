@@ -38,7 +38,7 @@ CREATE INDEX idx_loan_payments_date ON loan_payments(payment_date DESC);
 CREATE TABLE time_entries (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   date DATE NOT NULL,
-  category TEXT CHECK (category IN ('UK Job', 'Solar App', 'Factory App', 'Personal', 'Uni', 'Gym')) NOT NULL,
+  category TEXT CHECK (category IN ('Apply Jobs', 'Thesis Work', 'Uni Study', 'Gym', 'Personal work', 'CEO work')) NOT NULL,
   hours DECIMAL(5, 2) NOT NULL,
   effort_points DECIMAL(5, 2) NOT NULL,
   description TEXT,

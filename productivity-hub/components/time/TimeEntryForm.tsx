@@ -13,12 +13,12 @@ interface TimeEntryFormProps {
 }
 
 const categories: TimeCategory[] = [
-  "UK Job",
-  "Solar App",
-  "Factory App",
-  "Personal",
-  "Uni",
+  "Apply Jobs",
+  "Thesis Work",
+  "Uni Study",
   "Gym",
+  "Personal work",
+  "CEO work",
 ];
 
 export default function TimeEntryForm({ onEntryAdded }: TimeEntryFormProps) {

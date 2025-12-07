@@ -22,7 +22,7 @@ export interface LoanPayment {
   created_at: string;
 }
 
-export type TimeCategory = "UK Job" | "Solar App" | "Factory App" | "Personal" | "Uni" | "Gym";
+export type TimeCategory = "Apply Jobs" | "Thesis Work" | "Uni Study" | "Gym" | "Personal work" | "CEO work";
 
 export interface TimeEntry {
   id: string;
