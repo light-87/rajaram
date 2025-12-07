@@ -49,6 +49,24 @@ CREATE TABLE time_entries (
 CREATE INDEX idx_time_entries_date ON time_entries(date DESC);
 CREATE INDEX idx_time_entries_category ON time_entries(category);
 
+-- Table: todos
+CREATE TABLE todos (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  description TEXT,
+  status TEXT CHECK (status IN ('pending', 'in_progress', 'completed')) NOT NULL DEFAULT 'pending',
+  priority TEXT CHECK (priority IN ('low', 'medium', 'high')) NOT NULL DEFAULT 'medium',
+  due_date DATE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Index for faster queries on todos
+CREATE INDEX idx_todos_status ON todos(status);
+CREATE INDEX idx_todos_priority ON todos(priority);
+CREATE INDEX idx_todos_due_date ON todos(due_date);
+
 -- Table: clients
 CREATE TABLE clients (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -106,6 +124,11 @@ CREATE TRIGGER update_clients_updated_at
 
 CREATE TRIGGER update_journal_entries_updated_at
   BEFORE UPDATE ON journal_entries
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_todos_updated_at
+  BEFORE UPDATE ON todos
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 

@@ -62,3 +62,18 @@ export interface JournalEntry {
   created_at: string;
   updated_at: string;
 }
+
+export type TodoStatus = "pending" | "in_progress" | "completed";
+export type TodoPriority = "low" | "medium" | "high";
+
+export interface Todo {
+  id: string;
+  title: string;
+  description?: string;
+  status: TodoStatus;
+  priority: TodoPriority;
+  due_date?: string;
+  completed_at?: string;
+  created_at: string;
+  updated_at: string;
+}

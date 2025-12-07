@@ -6,6 +6,7 @@ import {
   Home,
   Banknote,
   Clock,
+  CheckSquare,
   Users,
   BookOpen,
   Lock,
@@ -18,6 +19,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/loans", label: "Loan Tracker", icon: Banknote },
   { href: "/time", label: "Time Tracker", icon: Clock },
+  { href: "/todos", label: "Todos", icon: CheckSquare },
   { href: "/clients", label: "Clients", icon: Users },
   { href: "/journal", label: "Journal", icon: BookOpen },
 ];
