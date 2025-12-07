@@ -50,22 +50,21 @@ export default function JournalEntryForm({ onEntryAdded }: JournalEntryFormProps
         });
       } else {
         setExistingEntry(null);
-        // Reset form if switching to a date without an entry
-        if (formData.content !== "" || formData.mood !== 3 || formData.energy !== 3) {
-          setFormData({
-            date: formData.date,
-            content: "",
-            mood: 3,
-            energy: 3,
-          });
-        }
+        // Reset form when switching to a date without an entry
+        setFormData({
+          date: formData.date,
+          content: "",
+          mood: 3,
+          energy: 3,
+        });
       }
     } catch (error) {
       console.error("Error checking existing entry:", error);
+      setExistingEntry(null);
     } finally {
       setIsChecking(false);
     }
-  }, [formData.date, formData.content, formData.mood, formData.energy]);
+  }, [formData.date]);
 
   useEffect(() => {
     checkExistingEntry();
