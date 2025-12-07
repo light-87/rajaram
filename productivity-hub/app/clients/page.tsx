@@ -40,6 +40,7 @@ export default function ClientsPage() {
         // Convert numeric string values to actual numbers
         const normalizedClients = data.map((client: any) => ({
           ...client,
+          setup_fee: client.setup_fee ? parseFloat(client.setup_fee) : null,
           contract_value: client.contract_value ? parseFloat(client.contract_value) : null,
         })) as Client[];
         setClients(normalizedClients);

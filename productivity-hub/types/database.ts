@@ -44,6 +44,7 @@ export interface Client {
   email?: string;
   phone?: string;
   product_service?: string;
+  setup_fee?: number;
   contract_value?: number;
   payment_frequency: PaymentFrequency;
   next_payment_date?: string;

@@ -104,17 +104,30 @@ export default function ClientDetails({ client, onEdit }: ClientDetailsProps) {
             </div>
           )}
 
-          {/* Contract Value */}
+          {/* Setup Fee */}
+          {client.setup_fee && (
+            <div>
+              <div className="flex items-center gap-2 text-text-secondary text-sm mb-1">
+                <DollarSign className="w-4 h-4" />
+                <span>Setup Fee (One-time)</span>
+              </div>
+              <div className="text-text-primary font-bold text-lg">
+                {formatCurrency(client.setup_fee)}
+              </div>
+            </div>
+          )}
+
+          {/* Recurring Payment */}
           {client.contract_value && (
             <div>
               <div className="flex items-center gap-2 text-text-secondary text-sm mb-1">
                 <DollarSign className="w-4 h-4" />
-                <span>Contract Value</span>
+                <span>Recurring Payment</span>
               </div>
               <div className="text-text-primary font-bold text-xl">
                 {formatCurrency(client.contract_value)}
                 <span className="text-sm text-text-secondary font-normal ml-2">
-                  ({getFrequencyLabel(client.payment_frequency)})
+                  / {getFrequencyLabel(client.payment_frequency)}
                 </span>
               </div>
             </div>

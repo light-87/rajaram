@@ -26,6 +26,7 @@ export default function ClientModal({
     email: "",
     phone: "",
     product_service: "",
+    setup_fee: "",
     contract_value: "",
     payment_frequency: "monthly" as PaymentFrequency,
     next_payment_date: "",
@@ -41,6 +42,7 @@ export default function ClientModal({
         email: client.email || "",
         phone: client.phone || "",
         product_service: client.product_service || "",
+        setup_fee: client.setup_fee?.toString() || "",
         contract_value: client.contract_value?.toString() || "",
         payment_frequency: client.payment_frequency,
         next_payment_date: client.next_payment_date || "",
@@ -55,6 +57,7 @@ export default function ClientModal({
         email: "",
         phone: "",
         product_service: "",
+        setup_fee: "",
         contract_value: "",
         payment_frequency: "monthly",
         next_payment_date: "",
@@ -87,6 +90,9 @@ export default function ClientModal({
         email: toNullIfEmpty(formData.email),
         phone: toNullIfEmpty(formData.phone),
         product_service: toNullIfEmpty(formData.product_service),
+        setup_fee: formData.setup_fee && formData.setup_fee.trim() !== ""
+          ? parseFloat(formData.setup_fee)
+          : null,
         contract_value: formData.contract_value && formData.contract_value.trim() !== ""
           ? parseFloat(formData.contract_value)
           : null,
@@ -97,6 +103,8 @@ export default function ClientModal({
         status: formData.status,
         notes: toNullIfEmpty(formData.notes),
       };
+
+      console.log('Submitting data:', dataToSubmit);
 
       if (client) {
         // Update existing client
@@ -117,9 +125,10 @@ export default function ClientModal({
 
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving client:", error);
-      showToast("Failed to save client", "error");
+      const errorMessage = error?.message || "Failed to save client";
+      showToast(errorMessage, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -232,11 +241,26 @@ export default function ClientModal({
           </select>
         </div>
 
-        {/* Contract Value & Payment Frequency */}
+        {/* Setup Fee (One-time) */}
+        <div>
+          <label className="block text-text-primary text-sm font-medium mb-2">
+            Setup Fee (₹) <span className="text-text-secondary text-xs">- One-time payment</span>
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            value={formData.setup_fee}
+            onChange={(e) => setFormData({ ...formData, setup_fee: e.target.value })}
+            className="w-full px-4 py-2 bg-background text-text-primary rounded-lg border border-gray-700 focus:border-accent-secondary focus:outline-none"
+            placeholder="30000"
+          />
+        </div>
+
+        {/* Recurring Payment & Frequency */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-text-primary text-sm font-medium mb-2">
-              Contract Value (₹)
+              Recurring Payment (₹)
             </label>
             <input
               type="number"
@@ -244,7 +268,7 @@ export default function ClientModal({
               value={formData.contract_value}
               onChange={(e) => setFormData({ ...formData, contract_value: e.target.value })}
               className="w-full px-4 py-2 bg-background text-text-primary rounded-lg border border-gray-700 focus:border-accent-secondary focus:outline-none"
-              placeholder="25000"
+              placeholder="12000"
             />
           </div>
 
@@ -262,7 +286,6 @@ export default function ClientModal({
               <option value="monthly">Monthly</option>
               <option value="quarterly">Quarterly</option>
               <option value="annual">Annual</option>
-              <option value="one-time">One-time</option>
             </select>
           </div>
         </div>

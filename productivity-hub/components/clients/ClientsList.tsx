@@ -47,20 +47,30 @@ export default function ClientsList({
   };
 
   const getContractDisplay = (client: Client) => {
-    if (!client.contract_value) return "—";
+    const parts = [];
 
-    const baseValue = formatCurrency(client.contract_value);
-    const frequency = client.payment_frequency;
-
-    if (frequency === "annual") {
-      return `${baseValue}/year`;
-    } else if (frequency === "monthly") {
-      return `${baseValue}/mo`;
-    } else if (frequency === "quarterly") {
-      return `${baseValue}/qtr`;
-    } else {
-      return baseValue;
+    // Add setup fee if exists
+    if (client.setup_fee) {
+      parts.push(`${formatCurrency(client.setup_fee)} setup`);
     }
+
+    // Add recurring payment if exists
+    if (client.contract_value) {
+      const baseValue = formatCurrency(client.contract_value);
+      const frequency = client.payment_frequency;
+
+      if (frequency === "annual") {
+        parts.push(`${baseValue}/year`);
+      } else if (frequency === "monthly") {
+        parts.push(`${baseValue}/mo`);
+      } else if (frequency === "quarterly") {
+        parts.push(`${baseValue}/qtr`);
+      } else {
+        parts.push(baseValue);
+      }
+    }
+
+    return parts.length > 0 ? parts.join(" + ") : "—";
   };
 
   if (clients.length === 0) {
