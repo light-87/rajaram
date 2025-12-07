@@ -21,6 +21,7 @@ const navItems = [
   { href: "/journal", label: "Journal", icon: BookOpen },
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/clients", label: "Clients", icon: Users },
+  { href: "/loans", label: "Loan Tracker", icon: Banknote },
 ];
 
 export default function Navigation() {
