@@ -167,8 +167,8 @@ export default function DashboardPage() {
         .select("*")
         .eq("date", today);
 
-      const todayHours = todayEntries?.reduce((sum, entry) => sum + parseFloat(entry.hours || "0"), 0) || 0;
-      const todayPoints = todayEntries?.reduce((sum, entry) => sum + parseFloat(entry.effort_points || "0"), 0) || 0;
+      const todayHours = todayEntries?.reduce((sum: number, entry: any) => sum + parseFloat(entry.hours || "0"), 0) || 0;
+      const todayPoints = todayEntries?.reduce((sum: number, entry: any) => sum + parseFloat(entry.effort_points || "0"), 0) || 0;
 
       // Weekly hours (last 7 days)
       const weeklyHours: number[] = [];
@@ -179,7 +179,7 @@ export default function DashboardPage() {
           .select("hours")
           .eq("date", date);
 
-        const dayTotal = dayEntries?.reduce((sum, entry) => sum + parseFloat(entry.hours || "0"), 0) || 0;
+        const dayTotal = dayEntries?.reduce((sum: number, entry: any) => sum + parseFloat(entry.hours || "0"), 0) || 0;
         weeklyHours.push(dayTotal);
       }
 
@@ -307,7 +307,7 @@ export default function DashboardPage() {
       const today = format(new Date(), "yyyy-MM-dd");
       const revenueDueToday = clients
         ?.filter(c => c.next_payment_date === today)
-        ?.reduce((sum, c) => sum + parseFloat(c.contract_value || "0"), 0) || 0;
+        ?.reduce((sum: number, c: any) => sum + parseFloat(c.contract_value || "0"), 0) || 0;
 
       // Upcoming payments (next 7 days)
       const sevenDaysLater = format(addDays(new Date(), 7), "yyyy-MM-dd");
@@ -511,7 +511,7 @@ export default function DashboardPage() {
             </div>
             <div className="mt-3 text-sm text-text-secondary">
               Week total: <span className="font-semibold text-text-primary">
-                {data.weeklyHours.reduce((a, b) => a + b, 0).toFixed(1)} hrs
+                {data.weeklyHours.reduce((a: number, b: number) => a + b, 0).toFixed(1)} hrs
               </span>
             </div>
           </div>
@@ -523,10 +523,10 @@ export default function DashboardPage() {
               <p className="text-2xl font-bold text-text-primary">
                 {data.weeklyMood.filter(m => m > 0).length > 0
                   ? `${getMoodEmoji(Math.round(
-                      data.weeklyMood.filter(m => m > 0).reduce((a, b) => a + b, 0) /
+                      data.weeklyMood.filter(m => m > 0).reduce((a: number, b: number) => a + b, 0) /
                       data.weeklyMood.filter(m => m > 0).length
                     ))} ${(
-                      data.weeklyMood.filter(m => m > 0).reduce((a, b) => a + b, 0) /
+                      data.weeklyMood.filter(m => m > 0).reduce((a: number, b: number) => a + b, 0) /
                       data.weeklyMood.filter(m => m > 0).length
                     ).toFixed(1)}`
                   : "No data"}
