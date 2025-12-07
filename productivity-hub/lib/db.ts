@@ -7,6 +7,13 @@ const executeQuery = async (query: string, params: any[] = []) => {
   return (neonSql as any)(query, params) as Promise<any[]>;
 };
 
+// Helper function to execute SQL queries with parameters
+async function executeQuery(query: string, params: any[] = []) {
+  // Neon requires using sql.query() for parameterized queries
+  // @ts-ignore - TypeScript types may not include query method
+  return await sql.query(query, params);
+}
+
 /**
  * Supabase-compatible database wrapper for Neon
  */

@@ -25,7 +25,14 @@ export default function LoansPage() {
         .single();
 
       if (!error && data) {
-        setLoan(data);
+        // Convert numeric string values to actual numbers
+        const normalizedLoan: Loan = {
+          ...data,
+          initial_principal: parseFloat(data.initial_principal),
+          current_balance: parseFloat(data.current_balance),
+          interest_rate: parseFloat(data.interest_rate),
+        } as Loan;
+        setLoan(normalizedLoan);
       }
     } catch (error) {
       console.error("Error fetching loan:", error);

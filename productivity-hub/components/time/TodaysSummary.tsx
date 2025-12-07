@@ -13,12 +13,19 @@ export default function TodaysSummary({ entries }: TodaysSummaryProps) {
   const today = new Date().toISOString().split("T")[0];
   const todaysEntries = entries.filter((e) => e.date === today);
 
-  const totalPoints = todaysEntries.reduce((sum, e) => sum + e.effort_points, 0);
-  const goalPercentage = (totalPoints / 50) * 100;
-  const pointsNeeded = Math.max(0, 50 - totalPoints);
+  console.log('Today:', today); // Debug
+  console.log('Total entries:', entries.length); // Debug
+  console.log('Todays entries:', todaysEntries); // Debug
+
+  const DAILY_GOAL = 10; // 10 hours of productive work per day
+  const totalPoints = todaysEntries.reduce((sum, e) => sum + Number(e.effort_points), 0);
+  const goalPercentage = (totalPoints / DAILY_GOAL) * 100;
+  const pointsNeeded = Math.max(0, DAILY_GOAL - totalPoints);
+
+  console.log('Total points:', totalPoints); // Debug
 
   const categoryBreakdown = todaysEntries.reduce((acc, entry) => {
-    acc[entry.category] = (acc[entry.category] || 0) + entry.effort_points;
+    acc[entry.category] = (acc[entry.category] || 0) + Number(entry.effort_points);
     return acc;
   }, {} as Record<string, number>);
 
@@ -31,18 +38,20 @@ export default function TodaysSummary({ entries }: TodaysSummaryProps) {
 
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-3xl font-bold text-text-primary">{totalPoints}</span>
-          <span className="text-sm text-text-secondary">/ 50 points</span>
+          <span className="text-3xl font-bold text-text-primary">
+            {totalPoints.toFixed(1)}
+          </span>
+          <span className="text-sm text-text-secondary">/ {DAILY_GOAL} hrs goal</span>
         </div>
         <ProgressBar percentage={goalPercentage} showLabel={false} size="lg" />
-        {totalPoints >= 50 ? (
+        {totalPoints >= DAILY_GOAL ? (
           <p className="text-sm text-accent-success mt-2 font-semibold flex items-center gap-2">
             <TrendingUp className="w-4 h-4" />
             Goal achieved! Keep up the momentum!
           </p>
         ) : (
           <p className="text-sm text-text-secondary mt-2">
-            {pointsNeeded} more points needed to reach your goal
+            {pointsNeeded.toFixed(1)} more hours needed to reach your goal
           </p>
         )}
       </div>
@@ -55,7 +64,7 @@ export default function TodaysSummary({ entries }: TodaysSummaryProps) {
           <div className="flex flex-wrap gap-2">
             {Object.entries(categoryBreakdown).map(([category, points]) => (
               <Badge key={category} variant="info" size="md">
-                {category}: {points} pts
+                {category}: {points.toFixed(1)} hrs
               </Badge>
             ))}
           </div>
