@@ -29,9 +29,10 @@ export default function TimePage() {
         // Convert numeric string values to actual numbers
         const normalizedEntries = data.map((entry: any) => ({
           ...entry,
-          hours: parseFloat(entry.hours),
-          effort_points: parseFloat(entry.effort_points),
+          hours: Number(entry.hours) || 0,
+          effort_points: Number(entry.effort_points) || 0,
         }));
+        console.log('Fetched entries:', normalizedEntries); // Debug log
         setEntries(normalizedEntries);
       }
     } catch (error) {
