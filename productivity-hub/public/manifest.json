@@ -1,6 +1,6 @@
 {
   "name": "Vaibhav Life Tracker",
-  "short_name": "Life Tracker",
+  "short_name": "Vaibhav Vault",
   "description": "Track your finances, time, clients, and daily reflections",
   "start_url": "/",
   "display": "standalone",
