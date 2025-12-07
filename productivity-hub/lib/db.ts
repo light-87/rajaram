@@ -122,6 +122,20 @@ class QueryBuilder {
       },
     };
   }
+
+  delete() {
+    return {
+      eq: async (column: string, value: any) => {
+        try {
+          const query = `DELETE FROM ${this.table} WHERE ${column} = $1`;
+          await executeQuery(query, [value]);
+          return { error: null };
+        } catch (error) {
+          return { error };
+        }
+      },
+    };
+  }
 }
 
 export const supabase = {

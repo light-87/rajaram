@@ -62,3 +62,16 @@ export interface JournalEntry {
   created_at: string;
   updated_at: string;
 }
+
+export type TodoPriority = "low" | "medium" | "high";
+
+export interface Todo {
+  id: string;
+  title: string;
+  description?: string;
+  completed: boolean;
+  priority?: TodoPriority;
+  due_date?: string;
+  created_at: string;
+  updated_at: string;
+}
