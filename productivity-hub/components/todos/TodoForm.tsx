@@ -5,7 +5,6 @@ import { supabase } from "@/lib/supabase";
 import { TodoPriority } from "@/types/database";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
-import { Plus } from "lucide-react";
 
 interface TodoFormProps {
   onTodoAdded: () => void;
@@ -55,13 +54,7 @@ export default function TodoForm({ onTodoAdded }: TodoFormProps) {
   };
 
   return (
-    <div className="card p-6">
-      <h2 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
-        <Plus className="w-6 h-6 text-accent-secondary" />
-        Add New Todo
-      </h2>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-text-primary mb-2">
@@ -122,12 +115,11 @@ export default function TodoForm({ onTodoAdded }: TodoFormProps) {
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting || !formData.title.trim()}>
-            {isSubmitting ? "Adding..." : "Add Todo"}
-          </Button>
-        </div>
-      </form>
-    </div>
+      <div className="flex justify-end">
+        <Button type="submit" disabled={isSubmitting || !formData.title.trim()}>
+          {isSubmitting ? "Adding..." : "Add Todo"}
+        </Button>
+      </div>
+    </form>
   );
 }
