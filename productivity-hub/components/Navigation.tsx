@@ -8,6 +8,7 @@ import {
   Clock,
   Users,
   BookOpen,
+  CheckSquare,
   Lock,
   LockOpen,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/time", label: "Time Tracker", icon: Clock },
   { href: "/clients", label: "Clients", icon: Users },
   { href: "/journal", label: "Journal", icon: BookOpen },
+  { href: "/todos", label: "Todos", icon: CheckSquare },
 ];
 
 export default function Navigation() {
