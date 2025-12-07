@@ -5,7 +5,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import AuthGuard from "@/components/AuthGuard";
 
 export const metadata: Metadata = {
-  title: "Personal Productivity Hub",
+  title: "Vaibhav Life Tracker",
   description: "Track your finances, time, clients, and daily reflections",
 };
 

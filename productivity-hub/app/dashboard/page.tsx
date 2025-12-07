@@ -13,7 +13,7 @@ export default function DashboardPage() {
       <div className="card p-12 text-center">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-2xl font-bold text-text-primary mb-4">
-            Welcome to Your Productivity Hub
+            Welcome to Vaibhav Life Tracker
           </h2>
           <p className="text-text-secondary mb-8 text-lg">
             <em>&ldquo;I&apos;m not building a business today. I&apos;m buying my freedom.&rdquo;</em>
