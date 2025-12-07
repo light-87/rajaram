@@ -82,7 +82,7 @@ export default function TodoList({ todos, onRefresh }: TodoListProps) {
   const getPriorityColor = (priority?: string) => {
     switch (priority) {
       case "high":
-        return "error";
+        return "danger";
       case "medium":
         return "warning";
       case "low":
