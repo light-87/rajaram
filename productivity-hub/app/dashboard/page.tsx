@@ -201,12 +201,12 @@ export default function DashboardPage() {
       const today = format(now, "yyyy-MM-dd");
 
       const activeTodos = todos?.length || 0;
-      const overdueTodos = todos?.filter(todo => {
+      const overdueTodos = todos?.filter((todo: any) => {
         if (!todo.due_date) return false;
         return new Date(todo.due_date) < now && todo.due_date !== today;
       }) || [];
 
-      const todayTodos = todos?.filter(todo => todo.due_date === today) || [];
+      const todayTodos = todos?.filter((todo: any) => todo.due_date === today) || [];
 
       return { activeTodos, overdueTodos, todayTodos };
     } catch (error) {
@@ -490,7 +490,7 @@ export default function DashboardPage() {
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-text-secondary mb-3">Daily Effort (Hours)</h4>
             <div className="flex items-end gap-2 h-24">
-              {data.weeklyHours.map((hours, index) => {
+              {data.weeklyHours.map((hours: number, index: number) => {
                 const dayLabel = format(addDays(startOfWeek(new Date(), { weekStartsOn: 0 }), index), "EEE");
                 const percentage = (hours / 10) * 100;
                 const color = hours >= 10 ? "bg-accent-success" : hours > 0 ? "bg-accent-primary" : "bg-border";
@@ -521,13 +521,13 @@ export default function DashboardPage() {
             <div className="bg-background/50 rounded-lg p-4 border border-border">
               <p className="text-sm text-text-secondary mb-2">Avg Mood</p>
               <p className="text-2xl font-bold text-text-primary">
-                {data.weeklyMood.filter(m => m > 0).length > 0
+                {data.weeklyMood.filter((m: number) => m > 0).length > 0
                   ? `${getMoodEmoji(Math.round(
-                      data.weeklyMood.filter(m => m > 0).reduce((a: number, b: number) => a + b, 0) /
-                      data.weeklyMood.filter(m => m > 0).length
+                      data.weeklyMood.filter((m: number) => m > 0).reduce((a: number, b: number) => a + b, 0) /
+                      data.weeklyMood.filter((m: number) => m > 0).length
                     ))} ${(
-                      data.weeklyMood.filter(m => m > 0).reduce((a: number, b: number) => a + b, 0) /
-                      data.weeklyMood.filter(m => m > 0).length
+                      data.weeklyMood.filter((m: number) => m > 0).reduce((a: number, b: number) => a + b, 0) /
+                      data.weeklyMood.filter((m: number) => m > 0).length
                     ).toFixed(1)}`
                   : "No data"}
               </p>
@@ -559,7 +559,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="space-y-1">
-                  {data.overdueTodos.slice(0, 3).map(todo => (
+                  {data.overdueTodos.slice(0, 3).map((todo: any) => (
                     <div key={todo.id} className="text-sm text-text-secondary flex items-start gap-2">
                       <span className="text-red-500">•</span>
                       <span className="flex-1">{todo.title}</span>
@@ -584,7 +584,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="space-y-1">
-                  {data.todayTodos.slice(0, 3).map(todo => (
+                  {data.todayTodos.slice(0, 3).map((todo: any) => (
                     <div key={todo.id} className="text-sm text-text-secondary flex items-start gap-2">
                       <span className="text-accent-primary">•</span>
                       <span className="flex-1">{todo.title}</span>
@@ -604,7 +604,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
                 <div className="space-y-2">
-                  {data.upcomingPayments.slice(0, 3).map(client => (
+                  {data.upcomingPayments.slice(0, 3).map((client: any) => (
                     <div key={client.id} className="flex items-center justify-between text-sm">
                       <div className="flex-1">
                         <p className="text-text-primary font-medium">{client.name}</p>
