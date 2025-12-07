@@ -136,7 +136,7 @@ export default function DashboardPage() {
           .eq("loan_id", loan.id);
 
         const avgMonthlyPayment = payments && payments.length > 0
-          ? payments.reduce((sum: number, p) => sum + parseFloat(p.principal_paid), 0) / payments.length
+          ? payments.reduce((sum: number, p: any) => sum + parseFloat(p.principal_paid), 0) / payments.length
           : 0;
 
         const monthsToFreedom = avgMonthlyPayment > 0
