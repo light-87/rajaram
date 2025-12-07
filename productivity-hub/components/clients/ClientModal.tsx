@@ -108,6 +108,12 @@ export default function ClientModal({
       }
 
       console.log('Submitting data:', dataToSubmit);
+      console.log('Data types:', {
+        contract_value: typeof dataToSubmit.contract_value,
+        payment_frequency: typeof dataToSubmit.payment_frequency,
+        status: typeof dataToSubmit.status,
+        setup_fee: typeof dataToSubmit.setup_fee,
+      });
 
       if (client) {
         // Update existing client
@@ -116,13 +122,21 @@ export default function ClientModal({
           .update(dataToSubmit)
           .eq("id", client.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Update error details:', error);
+          throw error;
+        }
         showToast("Client updated successfully", "success");
       } else {
         // Create new client
-        const { error } = await supabase.from("clients").insert([dataToSubmit]);
+        const { error } = await supabase
+          .from("clients")
+          .insert([dataToSubmit]);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Insert error details:', error);
+          throw error;
+        }
         showToast("Client added successfully", "success");
       }
 
