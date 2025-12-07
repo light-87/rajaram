@@ -26,13 +26,26 @@ export default function TimePage() {
         .order("date", { ascending: false });
 
       if (!error && data) {
-        // Convert numeric string values to actual numbers
-        const normalizedEntries = data.map((entry: any) => ({
-          ...entry,
-          hours: Number(entry.hours) || 0,
-          effort_points: Number(entry.effort_points) || 0,
-        }));
+        // Convert numeric string values to actual numbers and normalize dates
+        const normalizedEntries = data.map((entry: any) => {
+          // Normalize date to YYYY-MM-DD format
+          let normalizedDate = entry.date;
+          if (entry.date instanceof Date) {
+            normalizedDate = entry.date.toISOString().split('T')[0];
+          } else if (typeof entry.date === 'string' && entry.date.includes('T')) {
+            // If it's an ISO string, extract just the date part
+            normalizedDate = entry.date.split('T')[0];
+          }
+
+          return {
+            ...entry,
+            date: normalizedDate,
+            hours: Number(entry.hours) || 0,
+            effort_points: Number(entry.effort_points) || 0,
+          };
+        });
         console.log('Fetched entries:', normalizedEntries); // Debug log
+        console.log('First entry date:', normalizedEntries[0]?.date, 'Type:', typeof normalizedEntries[0]?.date); // Debug
         setEntries(normalizedEntries);
       }
     } catch (error) {
