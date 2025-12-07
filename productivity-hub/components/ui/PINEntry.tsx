@@ -14,7 +14,7 @@ export default function PINEntry({ onSubmit }: PINEntryProps) {
   const [isLoading, setIsLoading] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const handleChange = (index: number, value: string) => {
+  const handleChange = async (index: number, value: string) => {
     if (value.length > 1) return; // Only allow single digit
     if (value && !/^\d$/.test(value)) return; // Only allow numbers
 
@@ -26,6 +26,22 @@ export default function PINEntry({ onSubmit }: PINEntryProps) {
     // Auto-focus next input
     if (value && index < 4) {
       inputRefs.current[index + 1]?.focus();
+    }
+
+    // Auto-submit when all digits are entered
+    if (value && index === 4) {
+      const pinString = newPin.join("");
+      if (pinString.length === 5) {
+        setIsLoading(true);
+        const success = await onSubmit(pinString);
+        setIsLoading(false);
+
+        if (!success) {
+          setError("Incorrect PIN");
+          setPin(["", "", "", "", ""]);
+          inputRefs.current[0]?.focus();
+        }
+      }
     }
   };
 
@@ -53,12 +69,23 @@ export default function PINEntry({ onSubmit }: PINEntryProps) {
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
+  const handlePaste = async (e: React.ClipboardEvent) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData("text").trim();
     if (/^\d{5}$/.test(pastedData)) {
       setPin(pastedData.split(""));
       setError("");
+
+      // Auto-submit when pasting complete PIN
+      setIsLoading(true);
+      const success = await onSubmit(pastedData);
+      setIsLoading(false);
+
+      if (!success) {
+        setError("Incorrect PIN");
+        setPin(["", "", "", "", ""]);
+        inputRefs.current[0]?.focus();
+      }
     }
   };
 
