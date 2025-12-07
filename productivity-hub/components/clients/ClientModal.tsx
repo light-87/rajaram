@@ -75,17 +75,27 @@ export default function ClientModal({
     setIsSubmitting(true);
 
     try {
+      // Helper function to convert empty strings to null
+      const toNullIfEmpty = (value: string) => {
+        const trimmed = value.trim();
+        return trimmed === "" ? null : trimmed;
+      };
+
       const dataToSubmit = {
         name: formData.name.trim(),
-        company: formData.company.trim() || null,
-        email: formData.email.trim() || null,
-        phone: formData.phone.trim() || null,
-        product_service: formData.product_service.trim() || null,
-        contract_value: formData.contract_value ? parseFloat(formData.contract_value) : null,
+        company: toNullIfEmpty(formData.company),
+        email: toNullIfEmpty(formData.email),
+        phone: toNullIfEmpty(formData.phone),
+        product_service: toNullIfEmpty(formData.product_service),
+        contract_value: formData.contract_value && formData.contract_value.trim() !== ""
+          ? parseFloat(formData.contract_value)
+          : null,
         payment_frequency: formData.payment_frequency,
-        next_payment_date: formData.next_payment_date || null,
+        next_payment_date: formData.next_payment_date && formData.next_payment_date.trim() !== ""
+          ? formData.next_payment_date
+          : null,
         status: formData.status,
-        notes: formData.notes.trim() || null,
+        notes: toNullIfEmpty(formData.notes),
       };
 
       if (client) {
