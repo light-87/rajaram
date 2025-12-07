@@ -16,12 +16,11 @@ import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/loans", label: "Loan Tracker", icon: Banknote },
-  { href: "/time", label: "Time Tracker", icon: Clock },
-  { href: "/clients", label: "Clients", icon: Users },
-  { href: "/journal", label: "Journal", icon: BookOpen },
   { href: "/todos", label: "Todos", icon: CheckSquare },
+  { href: "/time", label: "Time Tracker", icon: Clock },
+  { href: "/journal", label: "Journal", icon: BookOpen },
+  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/clients", label: "Clients", icon: Users },
 ];
 
 export default function Navigation() {
@@ -35,7 +34,7 @@ export default function Navigation() {
           <div className="flex items-center gap-8">
             <div className="flex-shrink-0">
               <h1 className="text-xl font-bold text-text-primary">
-                Productivity<span className="text-accent-primary">Hub</span>
+                Vaibhav <span className="text-accent-primary">Life Tracker</span>
               </h1>
             </div>
 
