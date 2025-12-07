@@ -13,12 +13,12 @@ export default function TodaysSummary({ entries }: TodaysSummaryProps) {
   const today = new Date().toISOString().split("T")[0];
   const todaysEntries = entries.filter((e) => e.date === today);
 
-  const totalPoints = todaysEntries.reduce((sum, e) => sum + e.effort_points, 0);
+  const totalPoints = todaysEntries.reduce((sum, e) => sum + Number(e.effort_points), 0);
   const goalPercentage = (totalPoints / 50) * 100;
   const pointsNeeded = Math.max(0, 50 - totalPoints);
 
   const categoryBreakdown = todaysEntries.reduce((acc, entry) => {
-    acc[entry.category] = (acc[entry.category] || 0) + entry.effort_points;
+    acc[entry.category] = (acc[entry.category] || 0) + Number(entry.effort_points);
     return acc;
   }, {} as Record<string, number>);
 

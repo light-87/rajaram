@@ -25,12 +25,12 @@ export default function WeeklyView({ entries }: WeeklyViewProps) {
   const weekData = useMemo(() => {
     return weekDays.map((date) => {
       const dayEntries = entries.filter((e) => e.date === date);
-      const points = dayEntries.reduce((sum, e) => sum + e.effort_points, 0);
+      const points = dayEntries.reduce((sum, e) => sum + Number(e.effort_points), 0);
 
       return {
         day: format(new Date(date), "EEE"),
         date,
-        points,
+        points: Number(points.toFixed(1)), // Round to 1 decimal place
         meetsGoal: points >= 50,
       };
     });
