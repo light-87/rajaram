@@ -34,7 +34,15 @@ export default function LoanView({ loan, onUpdate }: LoanViewProps) {
       .order("payment_date", { ascending: false });
 
     if (!error && data) {
-      setPayments(data);
+      // Convert numeric string values to actual numbers
+      const normalizedPayments = data.map((payment: any) => ({
+        ...payment,
+        amount_paid: parseFloat(payment.amount_paid),
+        balance_after_payment: parseFloat(payment.balance_after_payment),
+        interest_accrued: parseFloat(payment.interest_accrued),
+        principal_paid: parseFloat(payment.principal_paid),
+      }));
+      setPayments(normalizedPayments);
     }
   };
 
