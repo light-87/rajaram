@@ -7,6 +7,12 @@ import AuthGuard from "@/components/AuthGuard";
 export const metadata: Metadata = {
   title: "Vaibhav Life Tracker",
   description: "Track your finances, time, clients, and daily reflections",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Vaibhav Life Tracker",
+  },
 };
 
 export default function RootLayout({
