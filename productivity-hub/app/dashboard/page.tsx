@@ -390,7 +390,7 @@ export default function DashboardPage() {
               <div className="bg-background/50 rounded-lg p-4 border border-border">
                 <p className="text-sm text-text-secondary mb-1">Current Balance</p>
                 <p className="text-xl font-bold text-text-primary">
-                  {formatCurrency(parseFloat(data.loan.current_balance))}
+                  {formatCurrency(Number(data.loan.current_balance))}
                 </p>
               </div>
               <div className="bg-background/50 rounded-lg p-4 border border-border">
