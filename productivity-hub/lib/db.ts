@@ -69,9 +69,16 @@ class QueryBuilder {
   }
 
   insert(data: any) {
+    // Handle arrays of data
+    if (Array.isArray(data)) {
+      data = data[0]; // Take first element if array
+    }
+
     const keys = Object.keys(data);
     const values = Object.values(data);
-    const placeholders = keys.map((_, i) => `$${i + 1}`).join(", ");
+
+    // Use numbered placeholders but ensure they're properly formatted
+    const placeholders = keys.map((_, i) => `\$${i + 1}`).join(", ");
     const table = this.table;
 
     return {
@@ -79,9 +86,12 @@ class QueryBuilder {
         single: async () => {
           try {
             const query = `INSERT INTO ${table} (${keys.join(", ")}) VALUES (${placeholders}) RETURNING *`;
+            console.log('INSERT Query:', query);
+            console.log('INSERT Values:', values);
             const result = await executeQuery(query, values);
             return { data: result[0], error: null };
           } catch (error) {
+            console.error('INSERT Error:', error);
             return { data: null, error };
           }
         },
@@ -93,9 +103,12 @@ class QueryBuilder {
         const promise = (async () => {
           try {
             const query = `INSERT INTO ${table} (${keys.join(", ")}) VALUES (${placeholders}) RETURNING *`;
+            console.log('INSERT Query:', query);
+            console.log('INSERT Values:', values);
             const result = await executeQuery(query, values);
             return { data: result, error: null };
           } catch (error) {
+            console.error('INSERT Error:', error);
             return { data: null, error };
           }
         })();
