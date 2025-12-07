@@ -84,15 +84,13 @@ export default function ClientModal({
         return trimmed === "" ? null : trimmed;
       };
 
-      const dataToSubmit = {
+      // Build data object - only include setup_fee if it has a value
+      const dataToSubmit: any = {
         name: formData.name.trim(),
         company: toNullIfEmpty(formData.company),
         email: toNullIfEmpty(formData.email),
         phone: toNullIfEmpty(formData.phone),
         product_service: toNullIfEmpty(formData.product_service),
-        setup_fee: formData.setup_fee && formData.setup_fee.trim() !== ""
-          ? parseFloat(formData.setup_fee)
-          : null,
         contract_value: formData.contract_value && formData.contract_value.trim() !== ""
           ? parseFloat(formData.contract_value)
           : null,
@@ -103,6 +101,11 @@ export default function ClientModal({
         status: formData.status,
         notes: toNullIfEmpty(formData.notes),
       };
+
+      // Only add setup_fee if user entered a value (prevents error if column doesn't exist)
+      if (formData.setup_fee && formData.setup_fee.trim() !== "") {
+        dataToSubmit.setup_fee = parseFloat(formData.setup_fee);
+      }
 
       console.log('Submitting data:', dataToSubmit);
 
