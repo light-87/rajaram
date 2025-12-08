@@ -227,8 +227,8 @@ export default function DashboardPage() {
         .eq("entry_date", today)
         .single();
 
-      const todayMood = todayEntry?.mood ? parseInt(todayEntry.mood) : null;
-      const todayEnergy = todayEntry?.energy ? parseInt(todayEntry.energy) : null;
+      const todayMood = todayEntry?.mood ? Number(todayEntry.mood) : null;
+      const todayEnergy = todayEntry?.energy ? Number(todayEntry.energy) : null;
 
       // Weekly mood
       const weeklyMood: number[] = [];
@@ -240,7 +240,7 @@ export default function DashboardPage() {
           .eq("entry_date", date)
           .single();
 
-        weeklyMood.push(dayEntry?.mood ? parseInt(dayEntry.mood) : 0);
+        weeklyMood.push(dayEntry?.mood ? Number(dayEntry.mood) : 0);
       }
 
       // Calculate streak
@@ -489,7 +489,7 @@ export default function DashboardPage() {
           {/* Effort Chart */}
           <div className="mb-6">
             <h4 className="text-sm font-semibold text-text-secondary mb-3">Daily Effort (Hours)</h4>
-            <div className="flex items-end gap-2 h-24">
+            <div className="flex items-end gap-2 h-32 mb-2">
               {data.weeklyHours.map((hours: number, index: number) => {
                 const dayLabel = format(addDays(startOfWeek(new Date(), { weekStartsOn: 0 }), index), "EEE");
                 const percentage = (hours / 10) * 100;
@@ -509,7 +509,7 @@ export default function DashboardPage() {
                 );
               })}
             </div>
-            <div className="mt-3 text-sm text-text-secondary">
+            <div className="pt-2 text-sm text-text-secondary border-t border-border">
               Week total: <span className="font-semibold text-text-primary">
                 {data.weeklyHours.reduce((a: number, b: number) => a + b, 0).toFixed(1)} hrs
               </span>
