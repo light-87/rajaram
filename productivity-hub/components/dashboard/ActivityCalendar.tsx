@@ -72,9 +72,21 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
         day = addDays(day, 1);
       }
 
+      // Helper to normalize date to YYYY-MM-DD format
+      const normalizeDate = (date: any): string => {
+        if (!date) return "";
+        if (date instanceof Date) {
+          return date.toISOString().split("T")[0];
+        }
+        if (typeof date === "string" && date.includes("T")) {
+          return date.split("T")[0];
+        }
+        return date;
+      };
+
       // Aggregate time entries by date (filter to current month)
       timeEntries.forEach((entry: any) => {
-        const dateKey = entry.date;
+        const dateKey = normalizeDate(entry.date);
         if (dateKey >= startDate && dateKey <= endDate) {
           const existing = dataMap.get(dateKey);
           if (existing) {
@@ -85,7 +97,7 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
 
       // Mark days with journal entries
       journalEntries.forEach((entry: any) => {
-        const dateKey = entry.entry_date;
+        const dateKey = normalizeDate(entry.entry_date);
         if (dateKey >= startDate && dateKey <= endDate) {
           const existing = dataMap.get(dateKey);
           if (existing) {
