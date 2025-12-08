@@ -13,7 +13,6 @@ import {
   subMonths,
   isSameMonth,
   isSameDay,
-  parseISO,
 } from "date-fns";
 import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
@@ -32,7 +31,6 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [monthData, setMonthData] = useState<Map<string, DayData>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
-  const [hoveredDay, setHoveredDay] = useState<DayData | null>(null);
 
   useEffect(() => {
     fetchMonthData();
@@ -47,27 +45,16 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
       const startDate = format(monthStart, "yyyy-MM-dd");
       const endDate = format(monthEnd, "yyyy-MM-dd");
 
-      // Fetch time entries for the month
-      const { data: timeEntries } = await supabase
-        .from("time_entries")
-        .select("date, hours")
-        .gte("date", startDate)
-        .lte("date", endDate);
+      // Fetch all data and filter client-side for reliability
+      const [timeResult, journalResult, todosResult] = await Promise.all([
+        supabase.from("time_entries").select("date, hours"),
+        supabase.from("journal_entries").select("entry_date"),
+        supabase.from("todos").select("updated_at, completed").eq("completed", true),
+      ]);
 
-      // Fetch journal entries for the month
-      const { data: journalEntries } = await supabase
-        .from("journal_entries")
-        .select("entry_date")
-        .gte("entry_date", startDate)
-        .lte("entry_date", endDate);
-
-      // Fetch completed todos for the month
-      const { data: todos } = await supabase
-        .from("todos")
-        .select("updated_at, completed")
-        .eq("completed", true)
-        .gte("updated_at", startDate)
-        .lte("updated_at", endDate + "T23:59:59");
+      const timeEntries = timeResult.data || [];
+      const journalEntries = journalResult.data || [];
+      const todos = todosResult.data || [];
 
       // Build the data map
       const dataMap = new Map<string, DayData>();
@@ -85,30 +72,36 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
         day = addDays(day, 1);
       }
 
-      // Aggregate time entries by date
-      timeEntries?.forEach((entry: any) => {
+      // Aggregate time entries by date (filter to current month)
+      timeEntries.forEach((entry: any) => {
         const dateKey = entry.date;
-        const existing = dataMap.get(dateKey);
-        if (existing) {
-          existing.hours += parseFloat(entry.hours || "0");
+        if (dateKey >= startDate && dateKey <= endDate) {
+          const existing = dataMap.get(dateKey);
+          if (existing) {
+            existing.hours += parseFloat(entry.hours || "0");
+          }
         }
       });
 
       // Mark days with journal entries
-      journalEntries?.forEach((entry: any) => {
+      journalEntries.forEach((entry: any) => {
         const dateKey = entry.entry_date;
-        const existing = dataMap.get(dateKey);
-        if (existing) {
-          existing.hasJournal = true;
+        if (dateKey >= startDate && dateKey <= endDate) {
+          const existing = dataMap.get(dateKey);
+          if (existing) {
+            existing.hasJournal = true;
+          }
         }
       });
 
       // Mark days with completed todos
-      todos?.forEach((todo: any) => {
+      todos.forEach((todo: any) => {
         const dateKey = todo.updated_at?.split("T")[0];
-        const existing = dataMap.get(dateKey);
-        if (existing) {
-          existing.hasTodos = true;
+        if (dateKey && dateKey >= startDate && dateKey <= endDate) {
+          const existing = dataMap.get(dateKey);
+          if (existing) {
+            existing.hasTodos = true;
+          }
         }
       });
 
@@ -125,7 +118,7 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
     if (hours < 3) return "bg-sky/30";
     if (hours < 6) return "bg-purple/50";
     if (hours < 10) return "bg-pink/60";
-    return "bg-gradient-to-br from-pink via-purple to-sky animate-pulse-slow";
+    return "bg-gradient-to-br from-pink via-purple to-sky";
   };
 
   const getIntensityBorder = (hours: number): string => {
@@ -133,7 +126,7 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
     if (hours < 3) return "border-sky/40";
     if (hours < 6) return "border-purple/50";
     if (hours < 10) return "border-pink/60";
-    return "border-pink/80 shadow-glow-pink";
+    return "border-pink/80";
   };
 
   const renderHeader = () => {
@@ -202,18 +195,17 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
           <div
             key={day.toString()}
             className="relative aspect-square"
-            onMouseEnter={() => isCurrentMonth && dayData && setHoveredDay(dayData)}
-            onMouseLeave={() => setHoveredDay(null)}
           >
             <div
               className={`
                 w-full h-full rounded-lg border flex items-center justify-center text-sm font-medium
-                transition-all duration-200 cursor-default
+                transition-all duration-200
                 ${isCurrentMonth ? getIntensityClass(hours) : "bg-background/30"}
                 ${isCurrentMonth ? getIntensityBorder(hours) : "border-transparent"}
-                ${isToday ? "ring-2 ring-yellow ring-offset-1 ring-offset-background-card" : ""}
+                ${isToday ? "ring-2 ring-yellow" : ""}
                 ${!isCurrentMonth ? "opacity-30" : ""}
               `}
+              title={isCurrentMonth ? `${hours.toFixed(1)} hours` : ""}
             >
               <span className={isCurrentMonth ? "text-text-primary" : "text-text-secondary"}>
                 {format(day, "d")}
@@ -271,38 +263,6 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
     );
   };
 
-  const renderTooltip = () => {
-    if (!hoveredDay) return null;
-
-    return (
-      <div className="mt-4 p-3 bg-background-elevated rounded-xl border border-border">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-text-primary">
-            {format(hoveredDay.date, "EEEE, MMM d")}
-          </span>
-          <span className={`text-sm font-bold ${hoveredDay.hours >= 10 ? "text-pink" : hoveredDay.hours >= 6 ? "text-purple" : hoveredDay.hours >= 3 ? "text-sky" : "text-text-secondary"}`}>
-            {hoveredDay.hours.toFixed(1)} hours
-          </span>
-        </div>
-        <div className="flex gap-3 mt-2">
-          {hoveredDay.hasJournal && (
-            <span className="text-xs text-purple flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-purple" /> Journaled
-            </span>
-          )}
-          {hoveredDay.hasTodos && (
-            <span className="text-xs text-green flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-green" /> Completed todos
-            </span>
-          )}
-          {!hoveredDay.hasJournal && !hoveredDay.hasTodos && hoveredDay.hours === 0 && (
-            <span className="text-xs text-text-secondary">No activity recorded</span>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className={`card p-6 ${className}`}>
       {renderHeader()}
@@ -315,7 +275,6 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
           {renderDays()}
           {renderCells()}
           {renderLegend()}
-          {renderTooltip()}
         </>
       )}
     </div>
