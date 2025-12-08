@@ -13,19 +13,35 @@ async function executeQuery(query: string, params: any[] = []) {
  * Supabase-compatible database wrapper for Neon
  */
 class QueryBuilder {
-  private whereClause: string = "";
+  private whereClauses: string[] = [];
   private whereParams: any[] = [];
   private orderClause: string = "";
   private limitClause: string = "";
 
   constructor(private table: string, private columns: string = "*") {}
 
+  private get whereClause(): string {
+    return this.whereClauses.length > 0 ? `WHERE ${this.whereClauses.join(" AND ")}` : "";
+  }
+
   select(columns = "*") {
     return new QueryBuilder(this.table, columns);
   }
 
   eq(column: string, value: any) {
-    this.whereClause = `WHERE ${column} = $${this.whereParams.length + 1}`;
+    this.whereClauses.push(`${column} = $${this.whereParams.length + 1}`);
+    this.whereParams.push(value);
+    return this;
+  }
+
+  gte(column: string, value: any) {
+    this.whereClauses.push(`${column} >= $${this.whereParams.length + 1}`);
+    this.whereParams.push(value);
+    return this;
+  }
+
+  lte(column: string, value: any) {
+    this.whereClauses.push(`${column} <= $${this.whereParams.length + 1}`);
     this.whereParams.push(value);
     return this;
   }
