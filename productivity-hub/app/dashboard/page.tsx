@@ -25,6 +25,7 @@ import StatCard from "@/components/ui/StatCard";
 import ProgressBar from "@/components/ui/ProgressBar";
 import Loading from "@/components/ui/Loading";
 import Badge from "@/components/ui/Badge";
+import ActivityCalendar from "@/components/dashboard/ActivityCalendar";
 import { Loan, Client, Todo } from "@/types/database";
 
 // Dashboard data interfaces
@@ -639,6 +640,11 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Activity Calendar */}
+      <div className="mb-8">
+        <ActivityCalendar />
       </div>
 
       {/* Quick Access Features */}
