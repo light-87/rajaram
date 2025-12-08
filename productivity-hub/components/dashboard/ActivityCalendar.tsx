@@ -75,13 +75,18 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
       // Helper to normalize date to YYYY-MM-DD format
       const normalizeDate = (date: any): string => {
         if (!date) return "";
+        // Handle Date objects
         if (date instanceof Date) {
-          return date.toISOString().split("T")[0];
+          return format(date, "yyyy-MM-dd");
         }
-        if (typeof date === "string" && date.includes("T")) {
-          return date.split("T")[0];
+        // Convert to string first
+        const dateStr = String(date);
+        // If it contains 'T', it's likely an ISO timestamp
+        if (dateStr.includes("T")) {
+          return dateStr.split("T")[0];
         }
-        return date;
+        // Already in YYYY-MM-DD format or similar
+        return dateStr;
       };
 
       // Aggregate time entries by date (filter to current month)
@@ -108,7 +113,7 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
 
       // Mark days with completed todos
       todos.forEach((todo: any) => {
-        const dateKey = todo.updated_at?.split("T")[0];
+        const dateKey = normalizeDate(todo.updated_at);
         if (dateKey && dateKey >= startDate && dateKey <= endDate) {
           const existing = dataMap.get(dateKey);
           if (existing) {
