@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 interface BadgeProps {
   children: React.ReactNode;
-  variant?: "default" | "success" | "warning" | "danger" | "info";
+  variant?: "default" | "success" | "warning" | "danger" | "info" | "pink" | "purple" | "sky" | "coral" | "gradient";
   size?: "sm" | "md" | "lg";
   className?: string;
 }
@@ -14,11 +14,16 @@ export default function Badge({
   className,
 }: BadgeProps) {
   const variants = {
-    default: "bg-gray-700 text-text-primary",
-    success: "bg-accent-success/20 text-accent-success border-accent-success/30",
-    warning: "bg-accent-primary/20 text-accent-primary border-accent-primary/30",
-    danger: "bg-red-600/20 text-red-500 border-red-600/30",
-    info: "bg-accent-secondary/20 text-accent-secondary border-accent-secondary/30",
+    default: "bg-background-elevated text-text-primary border-border",
+    success: "bg-green/15 text-green border-green/30",
+    warning: "bg-yellow/15 text-yellow border-yellow/30",
+    danger: "bg-red-500/15 text-red-400 border-red-500/30",
+    info: "bg-sky/15 text-sky border-sky/30",
+    pink: "bg-pink/15 text-pink border-pink/30",
+    purple: "bg-purple/15 text-purple border-purple/30",
+    sky: "bg-sky/15 text-sky border-sky/30",
+    coral: "bg-coral/15 text-coral border-coral/30",
+    gradient: "bg-gradient-pink-purple text-white border-transparent",
   };
 
   const sizes = {
@@ -30,7 +35,7 @@ export default function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full font-medium border",
+        "inline-flex items-center rounded-full font-medium border transition-all duration-200",
         variants[variant],
         sizes[size],
         className

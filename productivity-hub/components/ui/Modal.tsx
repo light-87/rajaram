@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import Button from "./Button";
+import { cn } from "@/lib/utils";
 
 interface ModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
+  color?: "pink" | "purple" | "sky" | "green" | "yellow" | "coral";
 }
 
 export default function Modal({
@@ -18,6 +20,7 @@ export default function Modal({
   title,
   children,
   size = "md",
+  color = "purple",
 }: ModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -44,29 +47,54 @@ export default function Modal({
     xl: "max-w-4xl",
   };
 
+  const headerColors = {
+    pink: "border-b-pink/40 bg-gradient-to-r from-pink/10 to-transparent",
+    purple: "border-b-purple/40 bg-gradient-to-r from-purple/10 to-transparent",
+    sky: "border-b-sky/40 bg-gradient-to-r from-sky/10 to-transparent",
+    green: "border-b-green/40 bg-gradient-to-r from-green/10 to-transparent",
+    yellow: "border-b-yellow/40 bg-gradient-to-r from-yellow/10 to-transparent",
+    coral: "border-b-coral/40 bg-gradient-to-r from-coral/10 to-transparent",
+  };
+
+  const titleColors = {
+    pink: "text-pink",
+    purple: "text-purple",
+    sky: "text-sky",
+    green: "text-green",
+    yellow: "text-yellow",
+    coral: "text-coral",
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/80 backdrop-blur-md"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div
-        className={`relative w-full ${sizes[size]} bg-background-card border border-border rounded-lg shadow-2xl`}
+        className={cn(
+          "relative w-full bg-background-card border border-border rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200",
+          sizes[size]
+        )}
       >
+        {/* Colored top accent */}
+        <div className={cn("absolute top-0 left-0 right-0 h-1 rounded-t-2xl", `bg-${color}`)} />
+
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-bold text-text-primary">{title}</h2>
-          <Button
-            variant="ghost"
-            size="sm"
+        <div className={cn(
+          "flex items-center justify-between p-6 border-b-2 rounded-t-2xl",
+          headerColors[color]
+        )}>
+          <h2 className={cn("text-xl font-bold", titleColors[color])}>{title}</h2>
+          <button
             onClick={onClose}
-            className="!p-1 !rounded-full hover:bg-background"
+            className="p-2 rounded-xl text-text-secondary hover:text-text-primary hover:bg-background-elevated transition-colors"
           >
             <X className="w-5 h-5" />
-          </Button>
+          </button>
         </div>
 
         {/* Content */}
