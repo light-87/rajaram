@@ -11,6 +11,7 @@ import {
   CheckSquare,
   Lock,
   LockOpen,
+  StickyNote,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,14 @@ const navItems = [
     href: "/journal",
     label: "Journal",
     icon: BookOpen,
+    color: "purple",
+    activeClasses: "bg-purple/15 text-purple border-purple/30",
+    hoverClasses: "hover:bg-purple/10 hover:text-purple",
+  },
+  {
+    href: "/notepad",
+    label: "Notepad",
+    icon: StickyNote,
     color: "purple",
     activeClasses: "bg-purple/15 text-purple border-purple/30",
     hoverClasses: "hover:bg-purple/10 hover:text-purple",
