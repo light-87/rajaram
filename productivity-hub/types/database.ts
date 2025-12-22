@@ -76,3 +76,26 @@ export interface Todo {
   created_at: string;
   updated_at: string;
 }
+
+export type NoteCategoryColor = "purple" | "sky" | "pink" | "yellow" | "green" | "coral";
+
+export interface NoteCategory {
+  id: string;
+  name: string;
+  color: NoteCategoryColor;
+  icon: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Note {
+  id: string;
+  category_id: string | null;
+  title: string;
+  content: string | null;
+  tags: string[];
+  is_pinned: boolean;
+  created_at: string;
+  updated_at: string;
+}
