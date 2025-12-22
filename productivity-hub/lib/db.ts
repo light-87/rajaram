@@ -1,11 +1,15 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, Pool } from "@neondatabase/serverless";
 
 const sql = neon(process.env.NEXT_PUBLIC_DATABASE_URL!);
 
+// Create a Pool for parameterized queries
+const pool = new Pool({ connectionString: process.env.NEXT_PUBLIC_DATABASE_URL! });
+
 // Helper function to execute SQL queries with parameters
 async function executeQuery(query: string, params: any[] = []) {
-  // Neon serverless driver: call sql as a function with query and params
-  return await sql(query, params);
+  // Use Pool.query() for parameterized queries with dynamic SQL
+  const result = await pool.query(query, params);
+  return result.rows;
 }
 
 /**
