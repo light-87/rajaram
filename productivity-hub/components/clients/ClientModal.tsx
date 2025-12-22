@@ -34,6 +34,19 @@ export default function ClientModal({
     notes: "",
   });
 
+  // Helper to normalize date to YYYY-MM-DD string format
+  const normalizeDate = (date: string | Date | null | undefined): string => {
+    if (!date) return "";
+    if (date instanceof Date) {
+      return date.toISOString().split("T")[0];
+    }
+    if (typeof date === "string") {
+      // If it's already a date string, extract just the date part
+      return date.split("T")[0];
+    }
+    return "";
+  };
+
   useEffect(() => {
     if (client) {
       setFormData({
@@ -45,7 +58,7 @@ export default function ClientModal({
         setup_fee: client.setup_fee?.toString() || "",
         contract_value: client.contract_value?.toString() || "",
         payment_frequency: client.payment_frequency,
-        next_payment_date: client.next_payment_date || "",
+        next_payment_date: normalizeDate(client.next_payment_date),
         status: client.status,
         notes: client.notes || "",
       });
@@ -95,8 +108,8 @@ export default function ClientModal({
           ? parseFloat(formData.contract_value)
           : null,
         payment_frequency: formData.payment_frequency,
-        next_payment_date: formData.next_payment_date && formData.next_payment_date.trim() !== ""
-          ? formData.next_payment_date
+        next_payment_date: formData.next_payment_date
+          ? normalizeDate(formData.next_payment_date) || null
           : null,
         status: formData.status,
         notes: toNullIfEmpty(formData.notes),
