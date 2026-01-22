@@ -1,13 +1,26 @@
 import { neon } from "@neondatabase/serverless";
 
-const sql = neon(process.env.NEXT_PUBLIC_DATABASE_URL!);
+const getSql = () => {
+  const url = process.env.NEXT_PUBLIC_DATABASE_URL;
+  if (!url) {
+    // Return a dummy object for build time
+    return {
+      query: async () => []
+    };
+  }
+  return neon(url);
+};
 
 // Helper function to execute SQL queries with parameters
 async function executeQuery(query: string, params: any[] = []) {
-  // Neon requires using sql.query() for parameterized queries
-  // @ts-ignore - TypeScript types may not include query method
+  const sql = getSql();
+  // @ts-ignore
   return await sql.query(query, params);
 }
+
+const sql = {
+  query: (q: string, p: any[]) => executeQuery(q, p)
+};
 
 /**
  * Supabase-compatible database wrapper for Neon

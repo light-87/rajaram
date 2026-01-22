@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEmployeeAuth } from "@/lib/employee-auth";
 import {
     BookMarked,
@@ -94,7 +96,7 @@ export default function ToolsPage() {
                     <h2 className="text-3xl font-bold text-text-primary">
                         Welcome back, {employee?.full_name.split(' ')[0]}!
                     </h2>
-                    <p className="text-text-secondary mt-1">Here's what's happening with our projects today.</p>
+                    <p className="text-text-secondary mt-1">Here&apos;s what&apos;s happening with our projects today.</p>
                 </section>
 
                 {/* Stats Grid */}

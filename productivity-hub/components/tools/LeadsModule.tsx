@@ -19,7 +19,7 @@ import {
     ChevronRight,
     ArrowRight
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { geocodeAddress, logActivity } from "@/lib/tools-utils";
 import { useEmployeeAuth } from "@/lib/employee-auth";
 
@@ -60,7 +60,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
         agent_incentive: ""
     });
 
-    const fetchLeads = async () => {
+    const fetchLeads = useCallback(async () => {
         try {
             setIsLoading(true);
             const { data, error } = await supabase
@@ -84,7 +84,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [brand]);
 
     const handleUpdateStatus = async (leadId: string, newStatus: LeadStatus) => {
         try {
@@ -253,7 +253,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
 
     useEffect(() => {
         fetchLeads();
-    }, [brand]);
+    }, [fetchLeads]);
 
     const filteredLeads = leads.filter(lead =>
         lead.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||

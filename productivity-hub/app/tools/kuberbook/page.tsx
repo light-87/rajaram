@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import LeadsModule from "@/components/tools/LeadsModule";
 import ClientsMapModule from "@/components/tools/ClientsMapModule";
 import ClientsModule from "@/components/tools/ClientsModule";
