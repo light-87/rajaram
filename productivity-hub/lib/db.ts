@@ -18,7 +18,7 @@ class QueryBuilder {
   private orderClause: string = "";
   private limitClause: string = "";
 
-  constructor(private table: string, private columns: string = "*") {}
+  constructor(private table: string, private columns: string = "*") { }
 
   private get whereClause(): string {
     return this.whereClauses.length > 0 ? `WHERE ${this.whereClauses.join(" AND ")}` : "";
@@ -30,6 +30,12 @@ class QueryBuilder {
 
   eq(column: string, value: any) {
     this.whereClauses.push(`${column} = $${this.whereParams.length + 1}`);
+    this.whereParams.push(value);
+    return this;
+  }
+
+  neq(column: string, value: any) {
+    this.whereClauses.push(`${column} != $${this.whereParams.length + 1}`);
     this.whereParams.push(value);
     return this;
   }

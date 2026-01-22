@@ -58,7 +58,7 @@ const quickAccessFeatures = [
     bgColor: "bg-pink/10",
     borderColor: "border-pink/30 hover:border-pink/50",
     iconColor: "text-pink",
-    href: "/todos",
+    href: "/vaibhav/todos",
     icon: CheckSquare,
   },
   {
@@ -67,7 +67,7 @@ const quickAccessFeatures = [
     bgColor: "bg-sky/10",
     borderColor: "border-sky/30 hover:border-sky/50",
     iconColor: "text-sky",
-    href: "/time",
+    href: "/vaibhav/time",
     icon: Clock,
   },
   {
@@ -76,7 +76,7 @@ const quickAccessFeatures = [
     bgColor: "bg-purple/10",
     borderColor: "border-purple/30 hover:border-purple/50",
     iconColor: "text-purple",
-    href: "/journal",
+    href: "/vaibhav/journal",
     icon: BookOpen,
   },
   {
@@ -85,7 +85,7 @@ const quickAccessFeatures = [
     bgColor: "bg-green/10",
     borderColor: "border-green/30 hover:border-green/50",
     iconColor: "text-green",
-    href: "/clients",
+    href: "/vaibhav/clients",
     icon: Users,
   },
   {
@@ -94,7 +94,7 @@ const quickAccessFeatures = [
     bgColor: "bg-coral/10",
     borderColor: "border-coral/30 hover:border-coral/50",
     iconColor: "text-coral",
-    href: "/loans",
+    href: "/vaibhav/loans",
     icon: Banknote,
   },
 ];
@@ -519,14 +519,14 @@ export default function DashboardPage() {
               <p className="text-2xl font-bold text-purple">
                 {data.weeklyMood.filter((m: number) => m > 0).length > 0
                   ? `${getMoodEmoji(
-                      Math.round(
-                        data.weeklyMood.filter((m: number) => m > 0).reduce((a: number, b: number) => a + b, 0) /
-                          data.weeklyMood.filter((m: number) => m > 0).length
-                      )
-                    )} ${(
+                    Math.round(
                       data.weeklyMood.filter((m: number) => m > 0).reduce((a: number, b: number) => a + b, 0) /
                       data.weeklyMood.filter((m: number) => m > 0).length
-                    ).toFixed(1)}`
+                    )
+                  )} ${(
+                    data.weeklyMood.filter((m: number) => m > 0).reduce((a: number, b: number) => a + b, 0) /
+                    data.weeklyMood.filter((m: number) => m > 0).length
+                  ).toFixed(1)}`
                   : "No data"}
               </p>
             </div>

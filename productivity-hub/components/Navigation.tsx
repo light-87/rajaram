@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   {
-    href: "/todos",
+    href: "/vaibhav/todos",
     label: "Todos",
     icon: CheckSquare,
     color: "pink",
@@ -26,7 +26,7 @@ const navItems = [
     hoverClasses: "hover:bg-pink/10 hover:text-pink",
   },
   {
-    href: "/time",
+    href: "/vaibhav/time",
     label: "Time",
     icon: Clock,
     color: "sky",
@@ -34,7 +34,7 @@ const navItems = [
     hoverClasses: "hover:bg-sky/10 hover:text-sky",
   },
   {
-    href: "/journal",
+    href: "/vaibhav/journal",
     label: "Journal",
     icon: BookOpen,
     color: "purple",
@@ -42,7 +42,7 @@ const navItems = [
     hoverClasses: "hover:bg-purple/10 hover:text-purple",
   },
   {
-    href: "/notepad",
+    href: "/vaibhav/notepad",
     label: "Notepad",
     icon: StickyNote,
     color: "purple",
@@ -50,7 +50,7 @@ const navItems = [
     hoverClasses: "hover:bg-purple/10 hover:text-purple",
   },
   {
-    href: "/dashboard",
+    href: "/vaibhav/dashboard",
     label: "Dashboard",
     icon: Home,
     color: "yellow",
@@ -58,7 +58,7 @@ const navItems = [
     hoverClasses: "hover:bg-yellow/10 hover:text-yellow",
   },
   {
-    href: "/clients",
+    href: "/vaibhav/clients",
     label: "Clients",
     icon: Users,
     color: "green",
@@ -66,7 +66,7 @@ const navItems = [
     hoverClasses: "hover:bg-green/10 hover:text-green",
   },
   {
-    href: "/loans",
+    href: "/vaibhav/loans",
     label: "Loans",
     icon: Banknote,
     color: "coral",

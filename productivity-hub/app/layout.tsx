@@ -33,7 +33,7 @@ export default function RootLayout({
       <body className="font-sans">
         <AuthProvider>
           <ToastProvider>
-            <AuthGuard>{children}</AuthGuard>
+            {children}
           </ToastProvider>
         </AuthProvider>
       </body>
