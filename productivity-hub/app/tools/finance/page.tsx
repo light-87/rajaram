@@ -2,7 +2,6 @@
 
 import { useEmployeeAuth } from "@/lib/employee-auth";
 import {
-    DollarSign,
     ArrowLeft,
     TrendingUp,
     TrendingDown,
@@ -12,16 +11,34 @@ import {
     ArrowRight
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import Badge from "@/components/ui/Badge";
+import { useEffect, useState, useCallback } from "react";
 import Modal from "@/components/ui/Modal";
 import { supabase } from "@/lib/supabase";
 import { BusinessClient, CompanyExpense } from "@/types/database";
 import { logActivity } from "@/lib/tools-utils";
 import { showToast } from "@/components/ui/Toast";
 
+/**
+ * Normalize expense amount to monthly value based on frequency
+ */
+function getMonthlyAmount(expense: CompanyExpense): number {
+    const amount = Number(expense.amount) || 0;
+    switch (expense.frequency) {
+        case 'monthly':
+            return amount;
+        case 'quarterly':
+            return amount / 3;
+        case 'annual':
+            return amount / 12;
+        case 'one-time':
+            return 0; // One-time expenses don't count in monthly calculations
+        default:
+            return amount;
+    }
+}
+
 export default function FinancePage() {
-    const { isAdmin } = useEmployeeAuth();
+    const { isAdmin, employee } = useEmployeeAuth();
     const [clients, setClients] = useState<BusinessClient[]>([]);
     const [expenses, setExpenses] = useState<CompanyExpense[]>([]);
     const [loading, setLoading] = useState(true);
@@ -36,32 +53,44 @@ export default function FinancePage() {
         frequency: "monthly"
     });
 
-    const fetchFinanceData = async () => {
+    const fetchFinanceData = useCallback(async () => {
         try {
             // Fetch Clients for Revenue & Profitability
-            const { data: clientsData } = await supabase
+            const { data: clientsData, error: clientsError } = await supabase
                 .from("business_clients")
                 .select("*");
 
-            // Fetch Recurring Expenses
-            const { data: expensesData } = await supabase
+            if (clientsError) {
+                console.error("Error fetching clients:", clientsError);
+                showToast("Failed to load client data", "error");
+            }
+
+            // Fetch Recurring Expenses (only active ones)
+            const { data: expensesData, error: expensesError } = await supabase
                 .from("company_expenses")
-                .select("*");
+                .select("*")
+                .eq("is_active", true);
+
+            if (expensesError) {
+                console.error("Error fetching expenses:", expensesError);
+                showToast("Failed to load expenses", "error");
+            }
 
             setClients(clientsData || []);
             setExpenses(expensesData || []);
         } catch (error) {
             console.error("Error fetching finance data:", error);
+            showToast("Failed to load financial data", "error");
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         if (isAdmin) {
             fetchFinanceData();
         }
-    }, [isAdmin]);
+    }, [isAdmin, fetchFinanceData]);
 
     const handleAddExpense = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -77,7 +106,8 @@ export default function FinancePage() {
             await logActivity(
                 "Expense Added",
                 `New expense "${newExpense.name}" of ₹${newExpense.amount} added`,
-                "Admin"
+                employee?.username,
+                employee?.id
             );
 
             setNewExpense({ name: "", amount: "", category: "Subscription", frequency: "monthly" });
@@ -92,10 +122,10 @@ export default function FinancePage() {
         }
     };
 
-    // Calculations
+    // Calculations - normalize expenses to monthly values
     const totalMRR = clients.reduce((acc: number, curr: BusinessClient) => acc + (Number(curr.recurring_profit) || 0), 0);
-    const totalExpenses = expenses.reduce((acc: number, curr: CompanyExpense) => acc + (Number(curr.amount) || 0), 0);
-    const netProfit = totalMRR - totalExpenses;
+    const totalMonthlyExpenses = expenses.reduce((acc: number, curr: CompanyExpense) => acc + getMonthlyAmount(curr), 0);
+    const netProfit = totalMRR - totalMonthlyExpenses;
 
     if (!isAdmin) {
         return (
@@ -145,7 +175,7 @@ export default function FinancePage() {
                             <p className="text-sm font-medium text-text-secondary">Monthly Expenses</p>
                             <TrendingDown className="w-4 h-4 text-red-400" />
                         </div>
-                        <p className="text-3xl font-bold text-text-primary">₹{totalExpenses.toLocaleString()}</p>
+                        <p className="text-3xl font-bold text-text-primary">₹{totalMonthlyExpenses.toLocaleString()}</p>
                         <p className="text-xs text-red-400 mt-2">Salaries, software & rent</p>
                     </div>
 
@@ -223,15 +253,23 @@ export default function FinancePage() {
                             <Calendar className="w-5 h-5 text-pink" /> Recurring Expenses
                         </h3>
                         <div className="card divide-y divide-border/50">
-                            {expenses.length > 0 ? expenses.map((exp) => (
-                                <div key={exp.id} className="p-4 flex items-center justify-between hover:bg-border/10 transition-colors">
-                                    <div>
-                                        <p className="font-bold text-text-primary">{exp.name}</p>
-                                        <p className="text-xs text-text-secondary">{exp.category} • {exp.frequency}</p>
+                            {expenses.length > 0 ? expenses.map((exp) => {
+                                const monthlyAmt = getMonthlyAmount(exp);
+                                return (
+                                    <div key={exp.id} className="p-4 flex items-center justify-between hover:bg-border/10 transition-colors">
+                                        <div>
+                                            <p className="font-bold text-text-primary">{exp.name}</p>
+                                            <p className="text-xs text-text-secondary">{exp.category} • {exp.frequency}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-bold text-red-400">₹{Number(exp.amount).toLocaleString()}</p>
+                                            {exp.frequency !== 'monthly' && exp.frequency !== 'one-time' && (
+                                                <p className="text-[10px] text-text-secondary">≈ ₹{monthlyAmt.toLocaleString()}/mo</p>
+                                            )}
+                                        </div>
                                     </div>
-                                    <p className="font-bold text-red-400">₹{Number(exp.amount).toLocaleString()}</p>
-                                </div>
-                            )) : (
+                                );
+                            }) : (
                                 <div className="p-8 text-center text-text-secondary">No expenses recorded.</div>
                             )}
                         </div>
@@ -305,7 +343,8 @@ export default function FinancePage() {
                                 className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-green/50 outline-none"
                             >
                                 <option value="monthly">Monthly</option>
-                                <option value="yearly">Yearly</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="annual">Annual</option>
                                 <option value="one-time">One-time</option>
                             </select>
                         </div>

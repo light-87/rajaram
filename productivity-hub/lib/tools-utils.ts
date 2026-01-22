@@ -28,17 +28,20 @@ export async function geocodeAddress(address: string): Promise<[number, number] 
 
 /**
  * Logs an activity to the activity_logs table.
+ * Now includes employee_id for proper tracking.
  */
 export async function logActivity(
     action: string,
     details?: string,
-    performedBy?: string
+    performedBy?: string,
+    employeeId?: string
 ) {
     try {
         await supabase.from("activity_logs").insert({
             action,
             details,
-            performed_by: performedBy // Optional: if null, DB trigger or RLS might handle it
+            performed_by: performedBy,
+            employee_id: employeeId
         });
     } catch (error) {
         console.error("Failed to log activity:", error);
@@ -46,13 +49,38 @@ export async function logActivity(
 }
 
 /**
- * Basic SHA-256 hashing for passwords using Web Crypto API.
+ * Hash password using bcrypt via API route.
+ * Bcrypt must run server-side, so we call an API endpoint.
  */
 export async function hashPassword(password: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
+    const response = await fetch('/api/auth/hash', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to hash password');
+    }
+
+    const { hash } = await response.json();
+    return hash;
+}
+
+/**
+ * Verify password against bcrypt hash via API route.
+ */
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+    const response = await fetch('/api/auth/hash', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, hash })
+    });
+
+    if (!response.ok) {
+        return false;
+    }
+
+    const { valid } = await response.json();
+    return valid;
 }

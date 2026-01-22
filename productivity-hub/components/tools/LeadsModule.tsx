@@ -16,7 +16,6 @@ import {
     MapPin,
     Clock,
     User,
-    ChevronRight,
     ArrowRight
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
@@ -70,17 +69,31 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                 .neq("status", "converted")
                 .order("created_at", { ascending: false });
 
-            if (data) setLeads(data);
+            if (error) {
+                console.error("Error fetching leads:", error);
+                showToast("Failed to load leads", "error");
+            } else {
+                setLeads(data || []);
+            }
 
             // Also fetch employees for assignment
-            const { data: profiles } = await supabase.from("profiles").select("*");
-            if (profiles) setEmployees(profiles);
+            const { data: profiles, error: profilesError } = await supabase.from("profiles").select("*");
+            if (profilesError) {
+                console.error("Error fetching profiles:", profilesError);
+            } else {
+                setEmployees(profiles || []);
+            }
 
             // Fetch agents for conversion dropdown
-            const { data: agentsData } = await supabase.from("sales_agents").select("*").order("name");
-            if (agentsData) setAgents(agentsData);
+            const { data: agentsData, error: agentsError } = await supabase.from("sales_agents").select("*").order("name");
+            if (agentsError) {
+                console.error("Error fetching agents:", agentsError);
+            } else {
+                setAgents(agentsData || []);
+            }
         } catch (e) {
-            console.error(e);
+            console.error("Unexpected error:", e);
+            showToast("Failed to load data", "error");
         } finally {
             setIsLoading(false);
         }
@@ -99,7 +112,8 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
             await logActivity(
                 "Lead Status Updated",
                 `Lead "${lead?.customer_name}" marked as ${newStatus}`,
-                employee?.username
+                employee?.username,
+                employee?.id
             );
 
             fetchLeads();
@@ -122,7 +136,8 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
             await logActivity(
                 "Lead Assigned",
                 `Lead "${lead?.customer_name}" assigned to ${assignedTo?.full_name}`,
-                employee?.username
+                employee?.username,
+                employee?.id
             );
 
             fetchLeads();
@@ -174,7 +189,8 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
             await logActivity(
                 "Lead Added",
                 `New lead "${newLead.customer_name}" added for ${brand}`,
-                employee?.username
+                employee?.username,
+                employee?.id
             );
 
             setNewLead({
@@ -203,10 +219,12 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
         if (!selectedLead) return;
         setIsSubmitting(true);
         try {
-            // 1. Insert into business_clients
+            // 1. Insert into business_clients - include phone and email from lead
             const { error: clientError } = await supabase.from("business_clients").insert({
                 name: selectedLead.customer_name,
                 brand: selectedLead.brand,
+                phone: selectedLead.phone,        // Copy phone from lead
+                email: selectedLead.email,        // Copy email from lead
                 address: selectedLead.address,
                 latitude: selectedLead.latitude,
                 longitude: selectedLead.longitude,
@@ -228,13 +246,19 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                 .update({ status: "converted" })
                 .eq("id", selectedLead.id);
 
-            if (leadError) throw leadError;
+            if (leadError) {
+                // If lead update fails, we should ideally rollback the client creation
+                // For now, just log and show error - the client was created
+                console.error("Failed to update lead status:", leadError);
+                showToast("Client created but lead status update failed", "error");
+            }
 
             // 3. Log Activity
             await logActivity(
                 "Lead Converted",
                 `Lead "${selectedLead.customer_name}" converted to Business Client`,
-                employee?.username
+                employee?.username,
+                employee?.id
             );
 
             // 4. Reset & Close
@@ -363,8 +387,8 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                 <div className="flex items-center justify-between">
                                     <div className="flex -space-x-2">
                                         {lead.assigned_to ? (
-                                            <div title={`Assigned to ${employees.find(e => e.id === lead.assigned_to)?.full_name}`} className="w-8 h-8 rounded-full bg-purple/20 border-2 border-background flex items-center justify-center text-[10px] font-bold text-purple uppercase">
-                                                {employees.find(e => e.id === lead.assigned_to)?.full_name.split(' ').map((n: string) => n[0]).join('')}
+                                            <div title={`Assigned to ${employees.find(e => e.id === lead.assigned_to)?.full_name || 'Unknown'}`} className="w-8 h-8 rounded-full bg-purple/20 border-2 border-background flex items-center justify-center text-[10px] font-bold text-purple uppercase">
+                                                {employees.find(e => e.id === lead.assigned_to)?.full_name?.split(' ').filter(Boolean).map((n: string) => n[0] || '').join('') || '?'}
                                             </div>
                                         ) : (
                                             <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-background flex items-center justify-center text-gray-400">

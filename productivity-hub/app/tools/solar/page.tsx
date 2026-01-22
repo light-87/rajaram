@@ -5,30 +5,42 @@ export const dynamic = "force-dynamic";
 import LeadsModule from "@/components/tools/LeadsModule";
 import ClientsMapModule from "@/components/tools/ClientsMapModule";
 import ClientsModule from "@/components/tools/ClientsModule";
-import { ArrowLeft, LayoutDashboard, Users, FileText, Settings, Map as MapIcon, List } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Users, Map as MapIcon, List } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { BusinessClient } from "@/types/database";
+import { showToast } from "@/components/ui/Toast";
 
-type Tab = "leads" | "clients" | "reports";
+type Tab = "leads" | "clients";
 
 export default function SolarPage() {
     const [activeTab, setActiveTab] = useState<Tab>("leads");
     const [viewMode, setViewMode] = useState<"list" | "map">("list");
     const [clients, setClients] = useState<BusinessClient[]>([]);
 
-    const fetchClients = async () => {
-        const { data } = await supabase
-            .from("business_clients")
-            .select("*")
-            .eq("brand", "Solar Vendor");
-        if (data) setClients(data);
-    };
+    const fetchClients = useCallback(async () => {
+        try {
+            const { data, error } = await supabase
+                .from("business_clients")
+                .select("*")
+                .eq("brand", "Solar Vendor");
+
+            if (error) {
+                console.error("Error fetching clients:", error);
+                showToast("Failed to load clients", "error");
+            } else {
+                setClients(data || []);
+            }
+        } catch (error) {
+            console.error("Unexpected error:", error);
+            showToast("Failed to load clients", "error");
+        }
+    }, []);
 
     useEffect(() => {
         fetchClients();
-    }, []);
+    }, [fetchClients]);
 
     return (
         <div className="min-h-screen bg-background pb-20">
