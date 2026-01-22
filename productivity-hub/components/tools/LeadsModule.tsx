@@ -5,7 +5,7 @@ import Loading from "@/components/ui/Loading";
 import Modal from "@/components/ui/Modal";
 import { showToast } from "@/components/ui/Toast";
 import { supabase } from "@/lib/supabase";
-import { Lead, LeadStatus, ProductBrand, Profile, SalesAgent } from "@/types/database";
+import { Lead, LeadStatus, ProductBrand, Profile, SalesAgent, FollowUp, FollowUpType, FollowUpStatus } from "@/types/database";
 import {
     Plus,
     Search,
@@ -16,9 +16,14 @@ import {
     MapPin,
     Clock,
     User,
-    ArrowRight
+    ArrowRight,
+    Calendar,
+    Copy,
+    CheckCircle2,
+    MessageSquare
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
+import { format } from "date-fns";
 import { geocodeAddress, logActivity } from "@/lib/tools-utils";
 import { useEmployeeAuth } from "@/lib/employee-auth";
 
@@ -58,6 +63,16 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
         agent_name: "",
         agent_incentive: ""
     });
+
+    // Follow-up State
+    const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
+    const [followUpData, setFollowUpData] = useState({
+        scheduled_date: "",
+        scheduled_time: "",
+        type: "call" as FollowUpType,
+        notes: ""
+    });
+    const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const fetchLeads = useCallback(async () => {
         try {
@@ -275,6 +290,60 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
         }
     };
 
+    const handleScheduleFollowUp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!selectedLead) return;
+        setIsSubmitting(true);
+        try {
+            const { error } = await supabase.from("follow_ups").insert({
+                lead_id: selectedLead.id,
+                scheduled_date: followUpData.scheduled_date,
+                scheduled_time: followUpData.scheduled_time || null,
+                type: followUpData.type,
+                notes: followUpData.notes || null,
+                status: "pending",
+                assigned_to: selectedLead.assigned_to || employee?.id,
+                created_by: employee?.id
+            });
+
+            if (error) throw error;
+
+            // Also update the lead's next_follow_up field
+            await supabase.from("leads").update({
+                next_follow_up: followUpData.scheduled_date,
+                follow_up_notes: followUpData.notes || null
+            }).eq("id", selectedLead.id);
+
+            await logActivity(
+                "Follow-up Scheduled",
+                `${followUpData.type} follow-up scheduled for "${selectedLead.customer_name}" on ${followUpData.scheduled_date}`,
+                employee?.username,
+                employee?.id
+            );
+
+            setIsFollowUpModalOpen(false);
+            setFollowUpData({ scheduled_date: "", scheduled_time: "", type: "call", notes: "" });
+            showToast("Follow-up scheduled!");
+            fetchLeads();
+        } catch (error) {
+            console.error("Error scheduling follow-up:", error);
+            showToast("Failed to schedule follow-up", "error");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const copyToClipboard = async (text: string, id: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopiedId(id);
+            showToast("Copied to clipboard!");
+            setTimeout(() => setCopiedId(null), 2000);
+        } catch {
+            showToast("Failed to copy", "error");
+        }
+    };
+
     useEffect(() => {
         fetchLeads();
     }, [fetchLeads]);
@@ -366,13 +435,41 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
 
                                 <div className="space-y-2">
                                     {lead.phone && (
-                                        <div className="flex items-center gap-2 text-sm text-text-secondary">
-                                            <Phone className="w-3 h-3 text-green" /> {lead.phone}
+                                        <div className="flex items-center justify-between gap-2 text-sm text-text-secondary group/copy">
+                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                <Phone className="w-3 h-3 text-green flex-shrink-0" />
+                                                <span className="truncate">{lead.phone}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => copyToClipboard(lead.phone!, `phone-${lead.id}`)}
+                                                className="p-1 hover:bg-border/30 rounded opacity-0 group-hover/copy:opacity-100 transition-all"
+                                                title="Copy phone"
+                                            >
+                                                {copiedId === `phone-${lead.id}` ? (
+                                                    <CheckCircle2 className="w-3 h-3 text-green" />
+                                                ) : (
+                                                    <Copy className="w-3 h-3" />
+                                                )}
+                                            </button>
                                         </div>
                                     )}
                                     {lead.email && (
-                                        <div className="flex items-center gap-2 text-sm text-text-secondary">
-                                            <Mail className="w-3 h-3 text-sky" /> {lead.email}
+                                        <div className="flex items-center justify-between gap-2 text-sm text-text-secondary group/copy">
+                                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                                                <Mail className="w-3 h-3 text-sky flex-shrink-0" />
+                                                <span className="truncate">{lead.email}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => copyToClipboard(lead.email!, `email-${lead.id}`)}
+                                                className="p-1 hover:bg-border/30 rounded opacity-0 group-hover/copy:opacity-100 transition-all"
+                                                title="Copy email"
+                                            >
+                                                {copiedId === `email-${lead.id}` ? (
+                                                    <CheckCircle2 className="w-3 h-3 text-green" />
+                                                ) : (
+                                                    <Copy className="w-3 h-3" />
+                                                )}
+                                            </button>
                                         </div>
                                     )}
                                     {lead.address && (
@@ -381,6 +478,14 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Next Follow-up indicator */}
+                                {lead.next_follow_up && (
+                                    <div className="flex items-center gap-2 text-xs text-purple bg-purple/10 px-2 py-1 rounded-lg w-fit">
+                                        <Calendar className="w-3 h-3" />
+                                        Next: {format(new Date(lead.next_follow_up), "MMM d")}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mt-6 pt-4 border-t border-border/50 space-y-4">
@@ -422,17 +527,34 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                     </div>
                                 </div>
 
-                                {lead.status === 'qualified' && (
+                                {/* Action Buttons */}
+                                <div className="flex gap-2">
                                     <button
                                         onClick={() => {
                                             setSelectedLead(lead);
-                                            setIsConvertModalOpen(true);
+                                            setFollowUpData({
+                                                ...followUpData,
+                                                scheduled_date: new Date().toISOString().split('T')[0]
+                                            });
+                                            setIsFollowUpModalOpen(true);
                                         }}
-                                        className={`w-full py-2.5 ${brand === 'Kuberbook' ? 'bg-sky/10 text-sky hover:bg-sky/20' : 'bg-yellow/10 text-yellow hover:bg-yellow/20'} rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2`}
+                                        className="flex-1 py-2 bg-purple/10 text-purple hover:bg-purple/20 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
                                     >
-                                        Convert to Client <ArrowRight className="w-3 h-3" />
+                                        <Calendar className="w-3 h-3" /> Follow-up
                                     </button>
-                                )}
+
+                                    {lead.status === 'qualified' && (
+                                        <button
+                                            onClick={() => {
+                                                setSelectedLead(lead);
+                                                setIsConvertModalOpen(true);
+                                            }}
+                                            className={`flex-1 py-2 ${brand === 'Kuberbook' ? 'bg-sky/10 text-sky hover:bg-sky/20' : 'bg-yellow/10 text-yellow hover:bg-yellow/20'} rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5`}
+                                        >
+                                            Convert <ArrowRight className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -584,11 +706,11 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                             />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-xs font-bold text-text-secondary uppercase">Recurring Profit/mo (₹)</label>
+                            <label className="text-xs font-bold text-text-secondary uppercase">Recurring Profit/yr (₹)</label>
                             <input
                                 required
                                 type="number"
-                                placeholder="2000"
+                                placeholder="24000"
                                 value={clientData.recurring_profit}
                                 onChange={e => setClientData({ ...clientData, recurring_profit: e.target.value })}
                                 className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-sky/50 outline-none"
@@ -651,6 +773,91 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                             className={`flex-1 py-3 text-white rounded-xl font-bold shadow-lg transition-all ${brand === 'Kuberbook' ? 'bg-sky hover:bg-sky/90' : 'bg-yellow hover:bg-yellow/90'} disabled:opacity-50`}
                         >
                             {isSubmitting ? 'Converting...' : 'Complete Conversion'}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Schedule Follow-up Modal */}
+            <Modal
+                isOpen={isFollowUpModalOpen}
+                onClose={() => setIsFollowUpModalOpen(false)}
+                title="Schedule Follow-up"
+                size="md"
+            >
+                <form onSubmit={handleScheduleFollowUp} className="space-y-4 p-2">
+                    <div className="p-4 bg-border/10 rounded-xl mb-4">
+                        <p className="text-sm font-bold text-text-primary">{selectedLead?.customer_name}</p>
+                        {selectedLead?.phone && (
+                            <p className="text-xs text-text-secondary flex items-center gap-1 mt-1">
+                                <Phone className="w-3 h-3" /> {selectedLead.phone}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-text-secondary uppercase">Date *</label>
+                            <input
+                                required
+                                type="date"
+                                min={new Date().toISOString().split('T')[0]}
+                                value={followUpData.scheduled_date}
+                                onChange={e => setFollowUpData({ ...followUpData, scheduled_date: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-purple/50 outline-none"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-text-secondary uppercase">Time (Optional)</label>
+                            <input
+                                type="time"
+                                value={followUpData.scheduled_time}
+                                onChange={e => setFollowUpData({ ...followUpData, scheduled_time: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-purple/50 outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-text-secondary uppercase">Follow-up Type</label>
+                        <select
+                            value={followUpData.type}
+                            onChange={e => setFollowUpData({ ...followUpData, type: e.target.value as FollowUpType })}
+                            className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-purple/50 outline-none"
+                        >
+                            <option value="call">📞 Phone Call</option>
+                            <option value="whatsapp">💬 WhatsApp</option>
+                            <option value="email">📧 Email</option>
+                            <option value="meeting">🤝 Meeting</option>
+                            <option value="visit">🏢 Site Visit</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-text-secondary uppercase">Notes</label>
+                        <textarea
+                            rows={3}
+                            placeholder="What do you need to discuss or follow up on?"
+                            value={followUpData.notes}
+                            onChange={e => setFollowUpData({ ...followUpData, notes: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-purple/50 outline-none resize-none"
+                        />
+                    </div>
+
+                    <div className="flex gap-4 pt-4">
+                        <button
+                            type="button"
+                            onClick={() => setIsFollowUpModalOpen(false)}
+                            className="flex-1 py-3 bg-border/20 rounded-xl font-bold transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="flex-1 py-3 bg-purple text-white rounded-xl font-bold shadow-lg transition-all hover:bg-purple/90 disabled:opacity-50"
+                        >
+                            {isSubmitting ? 'Scheduling...' : 'Schedule Follow-up'}
                         </button>
                     </div>
                 </form>

@@ -105,6 +105,15 @@ export interface Note {
 export type UserRole = 'admin' | 'employee';
 export type ProductBrand = 'Kuberbook' | 'Solar Vendor';
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'converted' | 'lost';
+export type LeadPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type FollowUpType = 'call' | 'email' | 'meeting' | 'visit' | 'whatsapp';
+export type FollowUpStatus = 'pending' | 'completed' | 'cancelled' | 'rescheduled';
+export type CommunicationType = 'call' | 'email' | 'meeting' | 'whatsapp' | 'visit' | 'sms';
+export type CommunicationOutcome = 'positive' | 'neutral' | 'negative' | 'no_response' | 'callback_requested';
+export type PaymentType = 'setup' | 'recurring' | 'one-time' | 'refund';
+export type PaymentMethod = 'cash' | 'upi' | 'bank_transfer' | 'cheque' | 'card';
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
+export type NotificationType = 'lead_assigned' | 'follow_up_due' | 'payment_received' | 'lead_converted' | 'system';
 
 export interface Profile {
   id: string;
@@ -126,10 +135,13 @@ export interface Lead {
   latitude?: number;
   longitude?: number;
   status: LeadStatus;
+  priority?: LeadPriority;
   assigned_to?: string;
   created_by?: string;
   notes?: string;
   google_maps_link?: string;
+  next_follow_up?: string;
+  follow_up_notes?: string;
   created_at: string;
   updated_at: string;
 }
@@ -153,6 +165,10 @@ export interface BusinessClient {
   status: string;
   created_by?: string;
   google_maps_link?: string;
+  contract_start_date?: string;
+  contract_end_date?: string;
+  next_payment_due?: string;
+  payment_status?: 'current' | 'due' | 'overdue';
   created_at: string;
   updated_at: string;
 }
@@ -186,4 +202,104 @@ export interface SalesAgent {
   default_incentive?: number;
   created_at: string;
   updated_at: string;
+}
+
+// --- New Feature Types ---
+
+export interface FollowUp {
+  id: string;
+  lead_id?: string;
+  client_id?: string;
+  scheduled_date: string;
+  scheduled_time?: string;
+  type: FollowUpType;
+  notes?: string;
+  status: FollowUpStatus;
+  assigned_to?: string;
+  completed_at?: string;
+  completed_notes?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  lead_name?: string;
+  client_name?: string;
+  assigned_to_name?: string;
+}
+
+export interface CommunicationLog {
+  id: string;
+  lead_id?: string;
+  client_id?: string;
+  type: CommunicationType;
+  direction: 'inbound' | 'outbound';
+  subject?: string;
+  notes?: string;
+  duration_minutes?: number;
+  outcome?: CommunicationOutcome;
+  logged_by?: string;
+  logged_at: string;
+  created_at: string;
+  // Joined fields
+  logged_by_name?: string;
+}
+
+export interface Payment {
+  id: string;
+  client_id: string;
+  amount: number;
+  payment_date: string;
+  payment_type: PaymentType;
+  payment_method?: PaymentMethod;
+  reference_number?: string;
+  notes?: string;
+  status: PaymentStatus;
+  recorded_by?: string;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  client_name?: string;
+  recorded_by_name?: string;
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  link?: string;
+  is_read: boolean;
+  related_id?: string;
+  created_at: string;
+}
+
+export interface SalesTarget {
+  id: string;
+  employee_id: string;
+  period_start: string;
+  period_end: string;
+  target_leads: number;
+  target_conversions: number;
+  target_revenue: number;
+  brand?: ProductBrand;
+  notes?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  employee_name?: string;
+}
+
+// Dashboard Summary Types
+export interface DashboardStats {
+  totalLeads: number;
+  newLeadsToday: number;
+  totalClients: number;
+  totalARR: number;
+  totalMRR: number;
+  pendingFollowUps: number;
+  overdueFollowUps: number;
+  leadsThisMonth: number;
+  conversionsThisMonth: number;
 }
