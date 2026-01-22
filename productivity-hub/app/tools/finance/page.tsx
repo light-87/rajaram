@@ -122,10 +122,13 @@ export default function FinancePage() {
         }
     };
 
-    // Calculations - normalize expenses to monthly values
-    const totalMRR = clients.reduce((acc: number, curr: BusinessClient) => acc + (Number(curr.recurring_profit) || 0), 0);
+    // Calculations
+    // Client recurring_profit is ANNUAL, so we convert to monthly for comparison
+    const totalARR = clients.reduce((acc: number, curr: BusinessClient) => acc + (Number(curr.recurring_profit) || 0), 0);
+    const totalMRR = totalARR / 12; // Convert annual to monthly
     const totalMonthlyExpenses = expenses.reduce((acc: number, curr: CompanyExpense) => acc + getMonthlyAmount(curr), 0);
-    const netProfit = totalMRR - totalMonthlyExpenses;
+    const monthlyNetProfit = totalMRR - totalMonthlyExpenses;
+    const annualNetProfit = (totalMRR - totalMonthlyExpenses) * 12;
 
     if (!isAdmin) {
         return (
@@ -160,14 +163,14 @@ export default function FinancePage() {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                 {/* Financial Overview Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="card p-6 border-l-4 border-l-green">
                         <div className="flex items-center justify-between mb-4">
-                            <p className="text-sm font-medium text-text-secondary">Monthly Recurring Revenue (MRR)</p>
+                            <p className="text-sm font-medium text-text-secondary">Annual Recurring Revenue</p>
                             <TrendingUp className="w-4 h-4 text-green" />
                         </div>
-                        <p className="text-3xl font-bold text-text-primary">₹{totalMRR.toLocaleString()}</p>
-                        <p className="text-xs text-green mt-2">Active recurring billing</p>
+                        <p className="text-3xl font-bold text-text-primary">₹{totalARR.toLocaleString()}</p>
+                        <p className="text-xs text-green mt-2">≈ ₹{Math.round(totalMRR).toLocaleString()}/month</p>
                     </div>
 
                     <div className="card p-6 border-l-4 border-l-red-400">
@@ -175,19 +178,32 @@ export default function FinancePage() {
                             <p className="text-sm font-medium text-text-secondary">Monthly Expenses</p>
                             <TrendingDown className="w-4 h-4 text-red-400" />
                         </div>
-                        <p className="text-3xl font-bold text-text-primary">₹{totalMonthlyExpenses.toLocaleString()}</p>
-                        <p className="text-xs text-red-400 mt-2">Salaries, software & rent</p>
+                        <p className="text-3xl font-bold text-text-primary">₹{Math.round(totalMonthlyExpenses).toLocaleString()}</p>
+                        <p className="text-xs text-red-400 mt-2">Salaries, subscriptions & rent</p>
                     </div>
 
                     <div className="card p-6 border-l-4 border-l-sky bg-sky/5">
                         <div className="flex items-center justify-between mb-4">
-                            <p className="text-sm font-medium text-text-secondary">Estimated Net Profit</p>
+                            <p className="text-sm font-medium text-text-secondary">Monthly Net Profit</p>
                             <Wallet className="w-4 h-4 text-sky" />
                         </div>
-                        <p className="text-3xl font-bold text-text-primary">₹{netProfit.toLocaleString()}</p>
-                        <p className="text-xs text-sky mt-2">
-                            {totalMRR > 0 ? `${((netProfit / totalMRR) * 100).toFixed(0)}% margin` : 'No revenue yet'}
+                        <p className={`text-3xl font-bold ${monthlyNetProfit >= 0 ? 'text-green' : 'text-red-400'}`}>
+                            ₹{Math.round(monthlyNetProfit).toLocaleString()}
                         </p>
+                        <p className="text-xs text-sky mt-2">
+                            {totalMRR > 0 ? `${((monthlyNetProfit / totalMRR) * 100).toFixed(0)}% margin` : 'No revenue yet'}
+                        </p>
+                    </div>
+
+                    <div className="card p-6 border-l-4 border-l-purple bg-purple/5">
+                        <div className="flex items-center justify-between mb-4">
+                            <p className="text-sm font-medium text-text-secondary">Annual Net Profit</p>
+                            <Wallet className="w-4 h-4 text-purple" />
+                        </div>
+                        <p className={`text-3xl font-bold ${annualNetProfit >= 0 ? 'text-green' : 'text-red-400'}`}>
+                            ₹{Math.round(annualNetProfit).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-purple mt-2">Projected yearly</p>
                     </div>
                 </div>
 
@@ -195,8 +211,8 @@ export default function FinancePage() {
                 <section className="card p-8">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h3 className="text-xl font-bold text-text-primary">Revenue Distribution</h3>
-                            <p className="text-sm text-text-secondary">Kuberbook vs Solar Vendor monthly contribution</p>
+                            <h3 className="text-xl font-bold text-text-primary">Annual Revenue Distribution</h3>
+                            <p className="text-sm text-text-secondary">Kuberbook vs Solar Vendor annual contribution</p>
                         </div>
                         <div className="flex gap-4">
                             <div className="flex items-center gap-2 text-xs font-bold text-sky">
@@ -211,17 +227,17 @@ export default function FinancePage() {
                     <div className="h-48 flex items-end gap-12 px-4 border-b border-border/50 pb-2">
                         {/* Calculate contributions */}
                         {(() => {
-                            const kubMRR = clients.filter(c => c.brand === 'Kuberbook').reduce((acc, c) => acc + Number(c.recurring_profit), 0);
-                            const solMRR = clients.filter(c => c.brand === 'Solar Vendor').reduce((acc, c) => acc + Number(c.recurring_profit), 0);
-                            const total = totalMRR || 1; // avoid div by zero
-                            const kubPerc = (kubMRR / total) * 100;
-                            const solPerc = (solMRR / total) * 100;
+                            const kubARR = clients.filter(c => c.brand === 'Kuberbook').reduce((acc, c) => acc + Number(c.recurring_profit), 0);
+                            const solARR = clients.filter(c => c.brand === 'Solar Vendor').reduce((acc, c) => acc + Number(c.recurring_profit), 0);
+                            const total = totalARR || 1; // avoid div by zero
+                            const kubPerc = (kubARR / total) * 100;
+                            const solPerc = (solARR / total) * 100;
 
                             return (
                                 <>
                                     <div className="flex-1 flex flex-col items-center gap-2 group relative">
                                         <div className="absolute -top-8 px-2 py-1 bg-sky text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                            ₹{kubMRR.toLocaleString()}
+                                            ₹{kubARR.toLocaleString()}/yr
                                         </div>
                                         <div
                                             className="w-full bg-sky/20 border-t-4 border-sky rounded-t-lg transition-all duration-700 hover:bg-sky/30"
@@ -232,7 +248,7 @@ export default function FinancePage() {
 
                                     <div className="flex-1 flex flex-col items-center gap-2 group relative">
                                         <div className="absolute -top-8 px-2 py-1 bg-yellow text-background text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                            ₹{solMRR.toLocaleString()}
+                                            ₹{solARR.toLocaleString()}/yr
                                         </div>
                                         <div
                                             className="w-full bg-yellow/20 border-t-4 border-yellow rounded-t-lg transition-all duration-700 hover:bg-yellow/30"
@@ -289,7 +305,7 @@ export default function FinancePage() {
                                     </div>
                                     <div className="text-right">
                                         <p className="font-bold text-green">₹{Number(client.recurring_profit).toLocaleString()}</p>
-                                        <p className="text-[10px] text-text-secondary">Monthly Recurring</p>
+                                        <p className="text-[10px] text-text-secondary">Annual Recurring</p>
                                     </div>
                                 </div>
                             )) : (
