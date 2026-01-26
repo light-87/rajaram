@@ -81,12 +81,12 @@ export default function ToolsPage() {
                     : { data: [] }
             ]);
 
-            const todayLeads = (leads || []).filter(l => l.created_at.startsWith(today));
-            const totalARR = (clients || []).reduce((acc, c) => acc + (Number(c.recurring_profit) || 0), 0);
+            const todayLeads = (leads || []).filter((l: Lead) => l.created_at.startsWith(today));
+            const totalARR = (clients || []).reduce((acc: number, c: BusinessClient) => acc + (Number(c.recurring_profit) || 0), 0);
 
             // Separate follow-ups into pending (today/future) and overdue
-            const pending = (followUps || []).filter(f => !isPast(new Date(f.scheduled_date)) || isToday(new Date(f.scheduled_date)));
-            const overdue = (followUps || []).filter(f => isPast(new Date(f.scheduled_date)) && !isToday(new Date(f.scheduled_date)));
+            const pending = (followUps || []).filter((f: FollowUp) => !isPast(new Date(f.scheduled_date)) || isToday(new Date(f.scheduled_date)));
+            const overdue = (followUps || []).filter((f: FollowUp) => isPast(new Date(f.scheduled_date)) && !isToday(new Date(f.scheduled_date)));
 
             setData({
                 totalLeads: leads?.length || 0,
@@ -95,11 +95,11 @@ export default function ToolsPage() {
                 totalARR,
                 pendingFollowUps: pending.slice(0, 5),
                 overdueFollowUps: overdue.slice(0, 5),
-                recentLeads: (leads || []).slice(0, 5),
-                recentActivity: activity || [],
-                notifications: notifications || [],
-                kuberbookLeads: (leads || []).filter(l => l.brand === 'Kuberbook').length,
-                solarLeads: (leads || []).filter(l => l.brand === 'Solar Vendor').length
+                recentLeads: (leads || []).slice(0, 5) as Lead[],
+                recentActivity: (activity || []) as ActivityLog[],
+                notifications: (notifications || []) as Notification[],
+                kuberbookLeads: (leads || []).filter((l: Lead) => l.brand === 'Kuberbook').length,
+                solarLeads: (leads || []).filter((l: Lead) => l.brand === 'Solar Vendor').length
             });
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
