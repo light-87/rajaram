@@ -55,10 +55,10 @@ export default function FollowUpsPage() {
             if (followUpsError) throw followUpsError;
 
             // Enrich follow-ups with lead/client names
-            const enriched = (followUpsData || []).map(f => ({
+            const enriched = (followUpsData || []).map((f: FollowUp) => ({
                 ...f,
-                lead_name: leadsData?.find(l => l.id === f.lead_id)?.customer_name,
-                client_name: clientsData?.find(c => c.id === f.client_id)?.name
+                lead_name: leadsData?.find((l: Lead) => l.id === f.lead_id)?.customer_name,
+                client_name: clientsData?.find((c: BusinessClient) => c.id === f.client_id)?.name
             }));
 
             setFollowUps(enriched);

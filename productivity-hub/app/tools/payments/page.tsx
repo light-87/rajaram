@@ -58,9 +58,9 @@ export default function PaymentsPage() {
             if (paymentsError) throw paymentsError;
 
             // Enrich payments with client names
-            const enriched = (paymentsData || []).map(p => ({
+            const enriched = (paymentsData || []).map((p: Payment) => ({
                 ...p,
-                client_name: clientsData?.find(c => c.id === p.client_id)?.name
+                client_name: clientsData?.find((c: BusinessClient) => c.id === p.client_id)?.name
             }));
 
             setPayments(enriched);
