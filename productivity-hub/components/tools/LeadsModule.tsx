@@ -535,7 +535,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                         <select
                                             value={lead.status}
                                             onChange={(e) => handleUpdateStatus(lead.id, e.target.value as LeadStatus)}
-                                            className="text-[10px] font-bold bg-border/20 border-none rounded-lg px-2 py-1 outline-none"
+                                            className="text-[10px] font-bold bg-background-card border border-border/50 rounded-lg px-2 py-1.5 outline-none text-text-primary cursor-pointer hover:border-pink/50 transition-colors"
                                         >
                                             <option value="new">New</option>
                                             <option value="contacted">Contacted</option>
@@ -546,7 +546,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                         <select
                                             value={lead.assigned_to || ""}
                                             onChange={(e) => handleAssignLead(lead.id, e.target.value)}
-                                            className="text-[10px] font-bold bg-border/20 border-none rounded-lg px-2 py-1 outline-none"
+                                            className="text-[10px] font-bold bg-background-card border border-border/50 rounded-lg px-2 py-1.5 outline-none text-text-primary cursor-pointer hover:border-pink/50 transition-colors"
                                         >
                                             <option value="">Assign To...</option>
                                             {employees.map(emp => (
