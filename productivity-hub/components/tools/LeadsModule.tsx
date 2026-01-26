@@ -20,7 +20,8 @@ import {
     Calendar,
     Copy,
     CheckCircle2,
-    MessageSquare
+    MessageSquare,
+    Trash2
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
@@ -33,7 +34,7 @@ interface LeadsModuleProps {
 }
 
 export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
-    const { employee } = useEmployeeAuth();
+    const { employee, isAdmin } = useEmployeeAuth();
     const [leads, setLeads] = useState<Lead[]>([]);
     const [employees, setEmployees] = useState<Profile[]>([]);
     const [agents, setAgents] = useState<SalesAgent[]>([]);
@@ -333,6 +334,34 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
         }
     };
 
+    const handleDeleteLead = async (lead: Lead) => {
+        if (!confirm(`Are you sure you want to delete the lead "${lead.customer_name}"? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from("leads")
+                .delete()
+                .eq("id", lead.id);
+
+            if (error) throw error;
+
+            await logActivity(
+                "Lead Deleted",
+                `Lead "${lead.customer_name}" was deleted`,
+                employee?.username,
+                employee?.id
+            );
+
+            showToast("Lead deleted successfully");
+            fetchLeads();
+        } catch (error) {
+            console.error("Error deleting lead:", error);
+            showToast("Failed to delete lead", "error");
+        }
+    };
+
     const copyToClipboard = async (text: string, id: string) => {
         try {
             await navigator.clipboard.writeText(text);
@@ -552,6 +581,16 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                             className={`flex-1 py-2 ${brand === 'Kuberbook' ? 'bg-sky/10 text-sky hover:bg-sky/20' : 'bg-yellow/10 text-yellow hover:bg-yellow/20'} rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5`}
                                         >
                                             Convert <ArrowRight className="w-3 h-3" />
+                                        </button>
+                                    )}
+
+                                    {isAdmin && (
+                                        <button
+                                            onClick={() => handleDeleteLead(lead)}
+                                            className="p-2 bg-red-400/10 text-red-400 hover:bg-red-400/20 rounded-xl transition-all"
+                                            title="Delete lead"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
                                         </button>
                                     )}
                                 </div>

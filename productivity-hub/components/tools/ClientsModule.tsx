@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { BusinessClient, ProductBrand, SalesAgent } from "@/types/database";
-import { Edit2, DollarSign, MapPin, Search, Save, X, ExternalLink } from "lucide-react";
+import { Edit2, DollarSign, MapPin, Search, Save, X, ExternalLink, Trash2 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { showToast } from "@/components/ui/Toast";
 import { logActivity } from "@/lib/tools-utils";
@@ -16,7 +16,7 @@ interface ClientsModuleProps {
 }
 
 export default function ClientsModule({ clients, onUpdate, brand }: ClientsModuleProps) {
-    const { employee } = useEmployeeAuth();
+    const { employee, isAdmin } = useEmployeeAuth();
     const [searchQuery, setSearchQuery] = useState("");
     const [editingClient, setEditingClient] = useState<BusinessClient | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,6 +95,33 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
         }
     };
 
+    const handleDeleteClient = async (client: BusinessClient) => {
+        if (!confirm(`Are you sure you want to delete the client "${client.name}"?\n\nThis will also delete all related payments and follow-ups. This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from("business_clients")
+                .delete()
+                .eq("id", client.id);
+
+            if (error) throw error;
+
+            await logActivity(
+                "Client Deleted",
+                `Client "${client.name}" was deleted (Setup: ₹${client.setup_profit}, Recurring: ₹${client.recurring_profit}/yr)`,
+                employee?.username
+            );
+
+            showToast("Client deleted successfully");
+            onUpdate(); // This will trigger refetch and recalculation
+        } catch (error) {
+            console.error("Error deleting client:", error);
+            showToast("Failed to delete client", "error");
+        }
+    };
+
     const filteredClients = clients.filter(c =>
         c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.address?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -159,12 +186,23 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
                                 <p className="text-lg font-bold text-sky">₹{Number(client.recurring_profit).toLocaleString()}</p>
                             </div>
 
-                            <button
-                                onClick={() => handleEditClick(client)}
-                                className="p-2 bg-border/20 rounded-lg text-text-secondary hover:text-sky hover:bg-sky/10 transition-all ml-auto"
-                            >
-                                <Edit2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex gap-2 ml-auto">
+                                <button
+                                    onClick={() => handleEditClick(client)}
+                                    className="p-2 bg-border/20 rounded-lg text-text-secondary hover:text-sky hover:bg-sky/10 transition-all"
+                                >
+                                    <Edit2 className="w-4 h-4" />
+                                </button>
+                                {isAdmin && (
+                                    <button
+                                        onClick={() => handleDeleteClient(client)}
+                                        className="p-2 bg-red-400/10 rounded-lg text-red-400 hover:bg-red-400/20 transition-all"
+                                        title="Delete client"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 ))}
