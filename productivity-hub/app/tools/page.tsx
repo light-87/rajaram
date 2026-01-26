@@ -9,59 +9,117 @@ import {
     Users,
     Target,
     TrendingUp,
-    Plus,
     ArrowRight,
-    Settings,
     DollarSign,
-    Briefcase
+    Briefcase,
+    Bell,
+    Calendar,
+    Clock,
+    Phone,
+    AlertCircle,
+    CheckCircle2,
+    ChevronRight,
+    Activity
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { Lead, BusinessClient, FollowUp, Notification, ActivityLog } from "@/types/database";
+import { format, isToday, isPast, formatDistanceToNow } from "date-fns";
+import { showToast } from "@/components/ui/Toast";
+
+interface DashboardData {
+    totalLeads: number;
+    newLeadsToday: number;
+    totalClients: number;
+    totalARR: number;
+    pendingFollowUps: FollowUp[];
+    overdueFollowUps: FollowUp[];
+    recentLeads: Lead[];
+    recentActivity: ActivityLog[];
+    notifications: Notification[];
+    kuberbookLeads: number;
+    solarLeads: number;
+}
 
 export default function ToolsPage() {
     const { employee, logout, isAdmin } = useEmployeeAuth();
-    const [stats, setStats] = useState([
-        { label: "New Leads", value: "...", icon: Target, color: "sky" },
-        { label: "Active Clients", value: "...", icon: Users, color: "green" },
-        { label: "Revenue (Proj.)", value: "...", icon: TrendingUp, color: "pink" },
-    ]);
+    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState<DashboardData>({
+        totalLeads: 0,
+        newLeadsToday: 0,
+        totalClients: 0,
+        totalARR: 0,
+        pendingFollowUps: [],
+        overdueFollowUps: [],
+        recentLeads: [],
+        recentActivity: [],
+        notifications: [],
+        kuberbookLeads: 0,
+        solarLeads: 0
+    });
+
+    const fetchDashboardData = useCallback(async () => {
+        try {
+            setLoading(true);
+            const today = new Date().toISOString().split('T')[0];
+
+            // Fetch all data in parallel
+            const [
+                { data: leads },
+                { data: clients },
+                { data: followUps },
+                { data: activity },
+                { data: notifications }
+            ] = await Promise.all([
+                supabase.from("leads").select("*").neq("status", "converted").order("created_at", { ascending: false }),
+                supabase.from("business_clients").select("*"),
+                supabase.from("follow_ups").select("*").eq("status", "pending").order("scheduled_date"),
+                supabase.from("activity_logs").select("*").order("created_at", { ascending: false }).limit(5),
+                employee?.id
+                    ? supabase.from("notifications").select("*").eq("user_id", employee.id).eq("is_read", false).order("created_at", { ascending: false }).limit(5)
+                    : { data: [] }
+            ]);
+
+            const todayLeads = (leads || []).filter((l: Lead) => l.created_at.startsWith(today));
+            const totalARR = (clients || []).reduce((acc: number, c: BusinessClient) => acc + (Number(c.recurring_profit) || 0), 0);
+
+            // Separate follow-ups into pending (today/future) and overdue
+            const pending = (followUps || []).filter((f: FollowUp) => !isPast(new Date(f.scheduled_date)) || isToday(new Date(f.scheduled_date)));
+            const overdue = (followUps || []).filter((f: FollowUp) => isPast(new Date(f.scheduled_date)) && !isToday(new Date(f.scheduled_date)));
+
+            setData({
+                totalLeads: leads?.length || 0,
+                newLeadsToday: todayLeads.length,
+                totalClients: clients?.length || 0,
+                totalARR,
+                pendingFollowUps: pending.slice(0, 5),
+                overdueFollowUps: overdue.slice(0, 5),
+                recentLeads: (leads || []).slice(0, 5) as Lead[],
+                recentActivity: (activity || []) as ActivityLog[],
+                notifications: (notifications || []) as Notification[],
+                kuberbookLeads: (leads || []).filter((l: Lead) => l.brand === 'Kuberbook').length,
+                solarLeads: (leads || []).filter((l: Lead) => l.brand === 'Solar Vendor').length
+            });
+        } catch (error) {
+            console.error("Error fetching dashboard data:", error);
+            showToast("Failed to load dashboard", "error");
+        } finally {
+            setLoading(false);
+        }
+    }, [employee?.id]);
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                // Fetch Leads
-                const { data: leads } = await supabase
-                    .from("leads")
-                    .select("*")
-                    .neq("status", "converted");
+        fetchDashboardData();
+    }, [fetchDashboardData]);
 
-                // Fetch Clients 
-                const { data: clients } = await supabase
-                    .from("business_clients")
-                    .select("*");
-
-                const totalRevenue = (clients || []).reduce((acc: number, curr: any) =>
-                    acc + (Number(curr.setup_profit) || 0) + (Number(curr.recurring_profit) || 0), 0
-                );
-
-                setStats([
-                    { label: "Total Leads", value: (leads?.length || 0).toString(), icon: Target, color: "sky" },
-                    { label: "Active Clients", value: (clients?.length || 0).toString(), icon: Users, color: "green" },
-                    {
-                        label: "Est. Revenue",
-                        value: `₹${(totalRevenue / 100000).toFixed(1)}L`,
-                        icon: TrendingUp,
-                        color: "pink"
-                    },
-                ]);
-            } catch (error) {
-                console.error("Error fetching stats:", error);
-            }
-        };
-
-        fetchStats();
-    }, []);
+    const markNotificationRead = async (id: string) => {
+        await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+        setData(prev => ({
+            ...prev,
+            notifications: prev.notifications.filter(n => n.id !== id)
+        }));
+    };
 
     return (
         <div className="min-h-screen bg-background pb-20">
@@ -76,6 +134,16 @@ export default function ToolsPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
+                        {/* Notifications Bell */}
+                        {data.notifications.length > 0 && (
+                            <div className="relative">
+                                <Bell className="w-5 h-5 text-text-secondary" />
+                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-pink text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                                    {data.notifications.length}
+                                </span>
+                            </div>
+                        )}
+
                         <div className="text-right hidden sm:block">
                             <p className="text-sm font-medium text-text-primary">{employee?.full_name}</p>
                             <p className="text-xs text-text-secondary capitalize">{employee?.role}</p>
@@ -90,152 +158,277 @@ export default function ToolsPage() {
                 </div>
             </header>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                 {/* Welcome Section */}
-                <section>
-                    <h2 className="text-3xl font-bold text-text-primary">
-                        Welcome back, {employee?.full_name.split(' ')[0]}!
-                    </h2>
-                    <p className="text-text-secondary mt-1">Here&apos;s what&apos;s happening with our projects today.</p>
+                <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-3xl font-bold text-text-primary">
+                            Welcome back, {employee?.full_name?.split(' ')[0] || 'User'}!
+                        </h2>
+                        <p className="text-text-secondary mt-1">
+                            {format(new Date(), "EEEE, MMMM d, yyyy")}
+                        </p>
+                    </div>
+
+                    {/* Quick Action Buttons */}
+                    <div className="flex gap-3">
+                        <Link
+                            href="/tools/kuberbook"
+                            className="px-4 py-2 bg-sky text-white rounded-xl font-medium text-sm flex items-center gap-2 hover:bg-sky/90 transition-colors"
+                        >
+                            <Target className="w-4 h-4" /> Add Lead
+                        </Link>
+                    </div>
                 </section>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    {stats.map((stat) => (
-                        <div key={stat.label} className="card p-6 flex items-center gap-4">
-                            <div className={`p-3 rounded-xl bg-${stat.color}/10`}>
-                                <stat.icon className={`w-6 h-6 text-${stat.color}`} />
-                            </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="card p-5 border-l-4 border-l-sky">
+                        <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-text-secondary">{stat.label}</p>
-                                <p className="text-2xl font-bold text-text-primary">{stat.value}</p>
+                                <p className="text-xs text-text-secondary uppercase font-bold">Total Leads</p>
+                                <p className="text-2xl font-bold text-text-primary mt-1">{data.totalLeads}</p>
                             </div>
+                            <Target className="w-8 h-8 text-sky/30" />
                         </div>
-                    ))}
+                        {data.newLeadsToday > 0 && (
+                            <p className="text-xs text-sky mt-2">+{data.newLeadsToday} today</p>
+                        )}
+                    </div>
+
+                    <div className="card p-5 border-l-4 border-l-green">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-text-secondary uppercase font-bold">Active Clients</p>
+                                <p className="text-2xl font-bold text-text-primary mt-1">{data.totalClients}</p>
+                            </div>
+                            <Users className="w-8 h-8 text-green/30" />
+                        </div>
+                        <p className="text-xs text-green mt-2">₹{(data.totalARR / 100000).toFixed(1)}L ARR</p>
+                    </div>
+
+                    <div className="card p-5 border-l-4 border-l-yellow">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-text-secondary uppercase font-bold">Pending Follow-ups</p>
+                                <p className="text-2xl font-bold text-text-primary mt-1">{data.pendingFollowUps.length}</p>
+                            </div>
+                            <Calendar className="w-8 h-8 text-yellow/30" />
+                        </div>
+                        <p className="text-xs text-yellow mt-2">Scheduled tasks</p>
+                    </div>
+
+                    <div className={`card p-5 border-l-4 ${data.overdueFollowUps.length > 0 ? 'border-l-red-400 bg-red-400/5' : 'border-l-purple'}`}>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-text-secondary uppercase font-bold">Overdue</p>
+                                <p className={`text-2xl font-bold mt-1 ${data.overdueFollowUps.length > 0 ? 'text-red-400' : 'text-text-primary'}`}>
+                                    {data.overdueFollowUps.length}
+                                </p>
+                            </div>
+                            <AlertCircle className={`w-8 h-8 ${data.overdueFollowUps.length > 0 ? 'text-red-400/50' : 'text-purple/30'}`} />
+                        </div>
+                        {data.overdueFollowUps.length > 0 && (
+                            <p className="text-xs text-red-400 mt-2">Needs attention!</p>
+                        )}
+                    </div>
                 </div>
 
-                {/* Brand Selector */}
-                <section className="space-y-6">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
-                            <div className="w-1 h-5 bg-gradient-pink-purple rounded-full" />
-                            Select Product
-                        </h3>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Kuberbook */}
-                        <Link
-                            href="/tools/kuberbook"
-                            className="group relative overflow-hidden rounded-3xl bg-background-card border border-border/50 p-8 hover:border-sky/50 transition-all hover:-translate-y-1"
-                        >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-sky/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-sky/20 transition-colors" />
-                            <div className="relative space-y-4">
-                                <div className="p-4 rounded-2xl bg-sky/10 w-fit">
-                                    <BookMarked className="w-8 h-8 text-sky" />
-                                </div>
-                                <div>
-                                    <h4 className="text-2xl font-bold text-text-primary">Kuberbook</h4>
-                                    <p className="text-text-secondary">Digital ledger and inventory management</p>
-                                </div>
-                                <div className="flex items-center gap-2 text-sky font-medium">
-                                    Open Dashboard <ArrowRight className="w-4 h-4" />
-                                </div>
-                            </div>
-                        </Link>
-
-                        {/* Solar Vendor */}
-                        <Link
-                            href="/tools/solar"
-                            className="group relative overflow-hidden rounded-3xl bg-background-card border border-border/50 p-8 hover:border-yellow/50 transition-all hover:-translate-y-1"
-                        >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-yellow/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-yellow/20 transition-colors" />
-                            <div className="relative space-y-4">
-                                <div className="p-4 rounded-2xl bg-yellow/10 w-fit">
-                                    <Sun className="w-8 h-8 text-yellow" />
-                                </div>
-                                <div>
-                                    <h4 className="text-2xl font-bold text-text-primary">Solar Vendor</h4>
-                                    <p className="text-text-secondary">Solar installation and vendor management</p>
-                                </div>
-                                <div className="flex items-center gap-2 text-yellow font-medium">
-                                    Open Dashboard <ArrowRight className="w-4 h-4" />
+                {/* Main Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Column - Follow-ups & Activity */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Overdue Follow-ups Alert */}
+                        {data.overdueFollowUps.length > 0 && (
+                            <div className="card p-6 bg-red-400/5 border-red-400/20">
+                                <h3 className="font-bold text-red-400 flex items-center gap-2 mb-4">
+                                    <AlertCircle className="w-5 h-5" /> Overdue Follow-ups
+                                </h3>
+                                <div className="space-y-3">
+                                    {data.overdueFollowUps.map(followUp => (
+                                        <div key={followUp.id} className="flex items-center justify-between p-3 bg-background rounded-xl">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-red-400/10 flex items-center justify-center">
+                                                    <Phone className="w-4 h-4 text-red-400" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-text-primary">
+                                                        {followUp.lead_name || followUp.client_name || 'Follow-up'}
+                                                    </p>
+                                                    <p className="text-xs text-red-400">
+                                                        {formatDistanceToNow(new Date(followUp.scheduled_date), { addSuffix: true })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs font-bold text-red-400 uppercase">{followUp.type}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        </Link>
-                    </div>
-                </section>
+                        )}
 
-                {/* Admin/Finance Section (Conditional) */}
-                {isAdmin && (
-                    <section className="space-y-6">
-                        <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
-                            <div className="w-1 h-5 bg-gradient-pink-purple rounded-full" />
-                            Management
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                            <Link
-                                href="/tools/admin/employees"
-                                className="card p-6 flex items-center justify-between group hover:border-purple/50 transition-all"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 rounded-xl bg-purple/10 text-purple">
-                                        <Users className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-text-primary">Employees</p>
-                                        <p className="text-xs text-text-secondary">Access Control & Staff</p>
-                                    </div>
+                        {/* Today's Schedule */}
+                        <div className="card p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-bold text-text-primary flex items-center gap-2">
+                                    <Clock className="w-5 h-5 text-sky" /> Today&apos;s Schedule
+                                </h3>
+                                <Link href="/tools/follow-ups" className="text-xs text-sky hover:underline flex items-center gap-1">
+                                    View All <ChevronRight className="w-3 h-3" />
+                                </Link>
+                            </div>
+                            {data.pendingFollowUps.length > 0 ? (
+                                <div className="space-y-3">
+                                    {data.pendingFollowUps.filter(f => isToday(new Date(f.scheduled_date))).slice(0, 3).map(followUp => (
+                                        <div key={followUp.id} className="flex items-center justify-between p-3 bg-border/10 rounded-xl hover:bg-border/20 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-lg bg-sky/10 flex items-center justify-center">
+                                                    <Phone className="w-5 h-5 text-sky" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-text-primary">
+                                                        {followUp.lead_name || followUp.client_name || 'Follow-up'}
+                                                    </p>
+                                                    <p className="text-xs text-text-secondary">
+                                                        {followUp.scheduled_time || 'Any time'} • {followUp.type}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button className="text-xs px-3 py-1.5 bg-green/10 text-green rounded-lg font-medium hover:bg-green/20 transition-colors">
+                                                Complete
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {data.pendingFollowUps.filter(f => isToday(new Date(f.scheduled_date))).length === 0 && (
+                                        <div className="text-center py-8 text-text-secondary">
+                                            <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-green/30" />
+                                            <p className="text-sm">No follow-ups scheduled for today!</p>
+                                        </div>
+                                    )}
                                 </div>
-                                <ArrowRight className="w-4 h-4 text-text-secondary group-hover:text-purple transition-all" />
-                            </Link>
+                            ) : (
+                                <div className="text-center py-8 text-text-secondary">
+                                    <Calendar className="w-12 h-12 mx-auto mb-3 text-border" />
+                                    <p className="text-sm">No pending follow-ups</p>
+                                </div>
+                            )}
+                        </div>
 
-                            <Link
-                                href="/tools/agents"
-                                className="card p-6 flex items-center justify-between group hover:border-sky/50 transition-all"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 rounded-xl bg-sky/10 text-sky">
-                                        <Briefcase className="w-5 h-5" />
+                        {/* Recent Leads */}
+                        <div className="card p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-bold text-text-primary flex items-center gap-2">
+                                    <Target className="w-5 h-5 text-pink" /> Recent Leads
+                                </h3>
+                            </div>
+                            <div className="space-y-3">
+                                {data.recentLeads.map(lead => (
+                                    <div key={lead.id} className="flex items-center justify-between p-3 border-b border-border/30 last:border-0">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-2 h-2 rounded-full ${lead.brand === 'Kuberbook' ? 'bg-sky' : 'bg-yellow'}`} />
+                                            <div>
+                                                <p className="text-sm font-medium text-text-primary">{lead.customer_name}</p>
+                                                <p className="text-xs text-text-secondary">{lead.brand} • {lead.status}</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-xs text-text-secondary">
+                                            {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}
+                                        </span>
                                     </div>
-                                    <div>
-                                        <p className="font-bold text-text-primary">Sales Agents</p>
-                                        <p className="text-xs text-text-secondary">External Partners & Leads</p>
-                                    </div>
-                                </div>
-                                <ArrowRight className="w-4 h-4 text-text-secondary group-hover:text-sky transition-all" />
-                            </Link>
-
-                            <Link
-                                href="/tools/finance"
-                                className="card p-6 flex items-center justify-between group hover:border-green/50 transition-all"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 rounded-xl bg-green/10 text-green">
-                                        <DollarSign className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-text-primary">Finance</p>
-                                        <p className="text-xs text-text-secondary">Expenses & Profitability</p>
-                                    </div>
-                                </div>
-                                <ArrowRight className="w-4 h-4 text-text-secondary group-hover:text-green transition-all" />
-                            </Link>
-
-                            <div className="card p-6 flex items-center justify-between opacity-50 cursor-not-allowed">
-                                <div className="flex items-center gap-4">
-                                    <div className="p-3 rounded-xl bg-yellow/10 text-yellow">
-                                        <Settings className="w-5 h-5" />
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-text-primary">Settings</p>
-                                        <p className="text-xs text-text-secondary">System configuration</p>
-                                    </div>
-                                </div>
+                                ))}
                             </div>
                         </div>
-                    </section>
-                )}
+                    </div>
+
+                    {/* Right Column - Quick Access & Activity */}
+                    <div className="space-y-6">
+                        {/* Brand Quick Access */}
+                        <div className="card p-6 space-y-4">
+                            <h3 className="font-bold text-text-primary">Quick Access</h3>
+
+                            <Link href="/tools/kuberbook" className="flex items-center justify-between p-4 bg-sky/5 rounded-xl hover:bg-sky/10 transition-colors group">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-sky/10">
+                                        <BookMarked className="w-5 h-5 text-sky" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-text-primary">Kuberbook</p>
+                                        <p className="text-xs text-text-secondary">{data.kuberbookLeads} active leads</p>
+                                    </div>
+                                </div>
+                                <ArrowRight className="w-4 h-4 text-sky opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Link>
+
+                            <Link href="/tools/solar" className="flex items-center justify-between p-4 bg-yellow/5 rounded-xl hover:bg-yellow/10 transition-colors group">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 rounded-lg bg-yellow/10">
+                                        <Sun className="w-5 h-5 text-yellow" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-text-primary">Solar Vendor</p>
+                                        <p className="text-xs text-text-secondary">{data.solarLeads} active leads</p>
+                                    </div>
+                                </div>
+                                <ArrowRight className="w-4 h-4 text-yellow opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </Link>
+                        </div>
+
+                        {/* Admin Quick Links */}
+                        {isAdmin && (
+                            <div className="card p-6 space-y-4">
+                                <h3 className="font-bold text-text-primary">Management</h3>
+
+                                <Link href="/tools/admin/employees" className="flex items-center gap-3 p-3 hover:bg-border/10 rounded-xl transition-colors">
+                                    <Users className="w-5 h-5 text-purple" />
+                                    <span className="text-sm text-text-primary">Employees</span>
+                                </Link>
+
+                                <Link href="/tools/agents" className="flex items-center gap-3 p-3 hover:bg-border/10 rounded-xl transition-colors">
+                                    <Briefcase className="w-5 h-5 text-sky" />
+                                    <span className="text-sm text-text-primary">Sales Agents</span>
+                                </Link>
+
+                                <Link href="/tools/finance" className="flex items-center gap-3 p-3 hover:bg-border/10 rounded-xl transition-colors">
+                                    <DollarSign className="w-5 h-5 text-green" />
+                                    <span className="text-sm text-text-primary">Finance</span>
+                                </Link>
+
+                                <Link href="/tools/payments" className="flex items-center gap-3 p-3 hover:bg-border/10 rounded-xl transition-colors">
+                                    <TrendingUp className="w-5 h-5 text-pink" />
+                                    <span className="text-sm text-text-primary">Payments</span>
+                                </Link>
+                            </div>
+                        )}
+
+                        {/* Recent Activity */}
+                        <div className="card p-6">
+                            <h3 className="font-bold text-text-primary flex items-center gap-2 mb-4">
+                                <Activity className="w-5 h-5 text-purple" /> Recent Activity
+                            </h3>
+                            <div className="space-y-4">
+                                {data.recentActivity.map((log, i) => (
+                                    <div key={log.id} className="flex gap-3">
+                                        <div className="relative">
+                                            <div className="w-2 h-2 rounded-full bg-purple mt-2" />
+                                            {i < data.recentActivity.length - 1 && (
+                                                <div className="absolute left-0.5 top-4 w-0.5 h-8 bg-border/50" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-text-primary">{log.action}</p>
+                                            <p className="text-xs text-text-secondary">
+                                                {log.performed_by} • {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                                {data.recentActivity.length === 0 && (
+                                    <p className="text-sm text-text-secondary text-center py-4">No recent activity</p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </main>
         </div>
     );

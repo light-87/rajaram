@@ -4,26 +4,23 @@ import { useEmployeeAuth } from "@/lib/employee-auth";
 import {
     Users,
     ArrowLeft,
-    Plus,
     UserPlus,
     Activity,
     Shield,
     XCircle,
-    Edit2,
-    Eye,
-    MoreVertical
+    Edit2
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import { supabase } from "@/lib/supabase";
-import { Profile, ActivityLog } from "@/types/database";
+import { Profile, ActivityLog, UserRole } from "@/types/database";
 import { logActivity, hashPassword } from "@/lib/tools-utils";
 import { showToast } from "@/components/ui/Toast";
 
 export default function EmployeesAdminPage() {
-    const { isAdmin } = useEmployeeAuth();
+    const { isAdmin, employee } = useEmployeeAuth();
     const [employees, setEmployees] = useState<Profile[]>([]);
     const [logs, setLogs] = useState<ActivityLog[]>([]);
     const [loading, setLoading] = useState(true);
@@ -39,45 +36,60 @@ export default function EmployeesAdminPage() {
         role: "employee"
     });
 
-    const fetchAdminData = async () => {
+    const fetchAdminData = useCallback(async () => {
         try {
             // Fetch All Profiles
-            const { data: profilesData } = await supabase
+            const { data: profilesData, error: profilesError } = await supabase
                 .from("profiles")
                 .select("*");
 
+            if (profilesError) {
+                console.error("Error fetching profiles:", profilesError);
+                showToast("Failed to load employees", "error");
+            }
+
             // Fetch Recent Activity Logs
-            const { data: logsData } = await supabase
+            const { data: logsData, error: logsError } = await supabase
                 .from("activity_logs")
                 .select("*")
                 .order("created_at", { ascending: false })
                 .limit(10);
 
+            if (logsError) {
+                console.error("Error fetching logs:", logsError);
+            }
+
             setEmployees(profilesData || []);
             setLogs(logsData || []);
         } catch (error) {
             console.error("Error fetching admin data:", error);
+            showToast("Failed to load data", "error");
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         if (isAdmin) {
             fetchAdminData();
         }
-    }, [isAdmin]);
+    }, [isAdmin, fetchAdminData]);
 
     const handleSaveEmployee = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
             if (editingEmployee) {
-                // Update
-                const updateData: any = {
+                // Update - build typed update object
+                const updateData: {
+                    username: string;
+                    full_name: string;
+                    role: UserRole;
+                    password_hash?: string;
+                } = {
                     username: employeeForm.username,
                     full_name: employeeForm.full_name,
-                    role: employeeForm.role
+                    role: employeeForm.role as UserRole
                 };
 
                 if (employeeForm.password) {
@@ -94,7 +106,8 @@ export default function EmployeesAdminPage() {
                 await logActivity(
                     "Employee Updated",
                     `Profile updated for "${employeeForm.full_name}"`,
-                    "Admin"
+                    employee?.username,
+                    employee?.id
                 );
                 showToast("Profile updated!");
             } else {
@@ -104,7 +117,7 @@ export default function EmployeesAdminPage() {
                     username: employeeForm.username,
                     full_name: employeeForm.full_name,
                     password_hash: password_hash,
-                    role: employeeForm.role,
+                    role: employeeForm.role as UserRole,
                     is_active: true
                 });
 
@@ -113,7 +126,8 @@ export default function EmployeesAdminPage() {
                 await logActivity(
                     "Employee Created",
                     `New employee profile created for "${employeeForm.full_name}"`,
-                    "Admin"
+                    employee?.username,
+                    employee?.id
                 );
                 showToast("Employee profile created!");
             }
@@ -140,7 +154,8 @@ export default function EmployeesAdminPage() {
             await logActivity(
                 "Employee Deleted",
                 `Employee profile "${name}" was deleted`,
-                "Admin"
+                employee?.username,
+                employee?.id
             );
 
             showToast("Employee deleted.");
@@ -221,7 +236,7 @@ export default function EmployeesAdminPage() {
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-8 h-8 rounded-full bg-gradient-pink-purple flex items-center justify-center text-[10px] font-bold text-white uppercase">
-                                                            {emp.full_name.split(' ').map((n: string) => n[0]).join('')}
+                                                            {emp.full_name?.split(' ').filter(Boolean).map((n: string) => n[0] || '').join('') || '?'}
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-bold text-text-primary">{emp.full_name}</p>
@@ -342,7 +357,7 @@ export default function EmployeesAdminPage() {
                             <label className="text-xs font-bold text-text-secondary uppercase">Role</label>
                             <select
                                 value={employeeForm.role}
-                                onChange={e => setEmployeeForm({ ...employeeForm, role: e.target.value as any })}
+                                onChange={e => setEmployeeForm({ ...employeeForm, role: e.target.value })}
                                 className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-purple/50 outline-none text-xs"
                             >
                                 <option value="employee">Sales/Employee</option>
@@ -357,7 +372,7 @@ export default function EmployeesAdminPage() {
                         </label>
                         <input
                             required={!editingEmployee}
-                            type="text"
+                            type="password"
                             placeholder={editingEmployee ? "Set new password..." : "Enter login PIN or password"}
                             value={employeeForm.password}
                             onChange={e => setEmployeeForm({ ...employeeForm, password: e.target.value })}

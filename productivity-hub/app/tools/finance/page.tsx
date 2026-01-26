@@ -2,7 +2,6 @@
 
 import { useEmployeeAuth } from "@/lib/employee-auth";
 import {
-    DollarSign,
     ArrowLeft,
     TrendingUp,
     TrendingDown,
@@ -12,16 +11,34 @@ import {
     ArrowRight
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import Badge from "@/components/ui/Badge";
+import { useEffect, useState, useCallback } from "react";
 import Modal from "@/components/ui/Modal";
 import { supabase } from "@/lib/supabase";
 import { BusinessClient, CompanyExpense } from "@/types/database";
 import { logActivity } from "@/lib/tools-utils";
 import { showToast } from "@/components/ui/Toast";
 
+/**
+ * Normalize expense amount to monthly value based on frequency
+ */
+function getMonthlyAmount(expense: CompanyExpense): number {
+    const amount = Number(expense.amount) || 0;
+    switch (expense.frequency) {
+        case 'monthly':
+            return amount;
+        case 'quarterly':
+            return amount / 3;
+        case 'annual':
+            return amount / 12;
+        case 'one-time':
+            return 0; // One-time expenses don't count in monthly calculations
+        default:
+            return amount;
+    }
+}
+
 export default function FinancePage() {
-    const { isAdmin } = useEmployeeAuth();
+    const { isAdmin, employee } = useEmployeeAuth();
     const [clients, setClients] = useState<BusinessClient[]>([]);
     const [expenses, setExpenses] = useState<CompanyExpense[]>([]);
     const [loading, setLoading] = useState(true);
@@ -36,32 +53,44 @@ export default function FinancePage() {
         frequency: "monthly"
     });
 
-    const fetchFinanceData = async () => {
+    const fetchFinanceData = useCallback(async () => {
         try {
             // Fetch Clients for Revenue & Profitability
-            const { data: clientsData } = await supabase
+            const { data: clientsData, error: clientsError } = await supabase
                 .from("business_clients")
                 .select("*");
 
-            // Fetch Recurring Expenses
-            const { data: expensesData } = await supabase
+            if (clientsError) {
+                console.error("Error fetching clients:", clientsError);
+                showToast("Failed to load client data", "error");
+            }
+
+            // Fetch Recurring Expenses (only active ones)
+            const { data: expensesData, error: expensesError } = await supabase
                 .from("company_expenses")
-                .select("*");
+                .select("*")
+                .eq("is_active", true);
+
+            if (expensesError) {
+                console.error("Error fetching expenses:", expensesError);
+                showToast("Failed to load expenses", "error");
+            }
 
             setClients(clientsData || []);
             setExpenses(expensesData || []);
         } catch (error) {
             console.error("Error fetching finance data:", error);
+            showToast("Failed to load financial data", "error");
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         if (isAdmin) {
             fetchFinanceData();
         }
-    }, [isAdmin]);
+    }, [isAdmin, fetchFinanceData]);
 
     const handleAddExpense = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -77,7 +106,8 @@ export default function FinancePage() {
             await logActivity(
                 "Expense Added",
                 `New expense "${newExpense.name}" of ₹${newExpense.amount} added`,
-                "Admin"
+                employee?.username,
+                employee?.id
             );
 
             setNewExpense({ name: "", amount: "", category: "Subscription", frequency: "monthly" });
@@ -93,9 +123,12 @@ export default function FinancePage() {
     };
 
     // Calculations
-    const totalMRR = clients.reduce((acc: number, curr: BusinessClient) => acc + (Number(curr.recurring_profit) || 0), 0);
-    const totalExpenses = expenses.reduce((acc: number, curr: CompanyExpense) => acc + (Number(curr.amount) || 0), 0);
-    const netProfit = totalMRR - totalExpenses;
+    // Client recurring_profit is ANNUAL, so we convert to monthly for comparison
+    const totalARR = clients.reduce((acc: number, curr: BusinessClient) => acc + (Number(curr.recurring_profit) || 0), 0);
+    const totalMRR = totalARR / 12; // Convert annual to monthly
+    const totalMonthlyExpenses = expenses.reduce((acc: number, curr: CompanyExpense) => acc + getMonthlyAmount(curr), 0);
+    const monthlyNetProfit = totalMRR - totalMonthlyExpenses;
+    const annualNetProfit = (totalMRR - totalMonthlyExpenses) * 12;
 
     if (!isAdmin) {
         return (
@@ -130,14 +163,14 @@ export default function FinancePage() {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                 {/* Financial Overview Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div className="card p-6 border-l-4 border-l-green">
                         <div className="flex items-center justify-between mb-4">
-                            <p className="text-sm font-medium text-text-secondary">Monthly Recurring Revenue (MRR)</p>
+                            <p className="text-sm font-medium text-text-secondary">Annual Recurring Revenue</p>
                             <TrendingUp className="w-4 h-4 text-green" />
                         </div>
-                        <p className="text-3xl font-bold text-text-primary">₹{totalMRR.toLocaleString()}</p>
-                        <p className="text-xs text-green mt-2">Active recurring billing</p>
+                        <p className="text-3xl font-bold text-text-primary">₹{totalARR.toLocaleString()}</p>
+                        <p className="text-xs text-green mt-2">≈ ₹{Math.round(totalMRR).toLocaleString()}/month</p>
                     </div>
 
                     <div className="card p-6 border-l-4 border-l-red-400">
@@ -145,19 +178,32 @@ export default function FinancePage() {
                             <p className="text-sm font-medium text-text-secondary">Monthly Expenses</p>
                             <TrendingDown className="w-4 h-4 text-red-400" />
                         </div>
-                        <p className="text-3xl font-bold text-text-primary">₹{totalExpenses.toLocaleString()}</p>
-                        <p className="text-xs text-red-400 mt-2">Salaries, software & rent</p>
+                        <p className="text-3xl font-bold text-text-primary">₹{Math.round(totalMonthlyExpenses).toLocaleString()}</p>
+                        <p className="text-xs text-red-400 mt-2">Salaries, subscriptions & rent</p>
                     </div>
 
                     <div className="card p-6 border-l-4 border-l-sky bg-sky/5">
                         <div className="flex items-center justify-between mb-4">
-                            <p className="text-sm font-medium text-text-secondary">Estimated Net Profit</p>
+                            <p className="text-sm font-medium text-text-secondary">Monthly Net Profit</p>
                             <Wallet className="w-4 h-4 text-sky" />
                         </div>
-                        <p className="text-3xl font-bold text-text-primary">₹{netProfit.toLocaleString()}</p>
-                        <p className="text-xs text-sky mt-2">
-                            {totalMRR > 0 ? `${((netProfit / totalMRR) * 100).toFixed(0)}% margin` : 'No revenue yet'}
+                        <p className={`text-3xl font-bold ${monthlyNetProfit >= 0 ? 'text-green' : 'text-red-400'}`}>
+                            ₹{Math.round(monthlyNetProfit).toLocaleString()}
                         </p>
+                        <p className="text-xs text-sky mt-2">
+                            {totalMRR > 0 ? `${((monthlyNetProfit / totalMRR) * 100).toFixed(0)}% margin` : 'No revenue yet'}
+                        </p>
+                    </div>
+
+                    <div className="card p-6 border-l-4 border-l-purple bg-purple/5">
+                        <div className="flex items-center justify-between mb-4">
+                            <p className="text-sm font-medium text-text-secondary">Annual Net Profit</p>
+                            <Wallet className="w-4 h-4 text-purple" />
+                        </div>
+                        <p className={`text-3xl font-bold ${annualNetProfit >= 0 ? 'text-green' : 'text-red-400'}`}>
+                            ₹{Math.round(annualNetProfit).toLocaleString()}
+                        </p>
+                        <p className="text-xs text-purple mt-2">Projected yearly</p>
                     </div>
                 </div>
 
@@ -165,8 +211,8 @@ export default function FinancePage() {
                 <section className="card p-8">
                     <div className="flex items-center justify-between mb-8">
                         <div>
-                            <h3 className="text-xl font-bold text-text-primary">Revenue Distribution</h3>
-                            <p className="text-sm text-text-secondary">Kuberbook vs Solar Vendor monthly contribution</p>
+                            <h3 className="text-xl font-bold text-text-primary">Annual Revenue Distribution</h3>
+                            <p className="text-sm text-text-secondary">Kuberbook vs Solar Vendor annual contribution</p>
                         </div>
                         <div className="flex gap-4">
                             <div className="flex items-center gap-2 text-xs font-bold text-sky">
@@ -181,17 +227,17 @@ export default function FinancePage() {
                     <div className="h-48 flex items-end gap-12 px-4 border-b border-border/50 pb-2">
                         {/* Calculate contributions */}
                         {(() => {
-                            const kubMRR = clients.filter(c => c.brand === 'Kuberbook').reduce((acc, c) => acc + Number(c.recurring_profit), 0);
-                            const solMRR = clients.filter(c => c.brand === 'Solar Vendor').reduce((acc, c) => acc + Number(c.recurring_profit), 0);
-                            const total = totalMRR || 1; // avoid div by zero
-                            const kubPerc = (kubMRR / total) * 100;
-                            const solPerc = (solMRR / total) * 100;
+                            const kubARR = clients.filter(c => c.brand === 'Kuberbook').reduce((acc, c) => acc + Number(c.recurring_profit), 0);
+                            const solARR = clients.filter(c => c.brand === 'Solar Vendor').reduce((acc, c) => acc + Number(c.recurring_profit), 0);
+                            const total = totalARR || 1; // avoid div by zero
+                            const kubPerc = (kubARR / total) * 100;
+                            const solPerc = (solARR / total) * 100;
 
                             return (
                                 <>
                                     <div className="flex-1 flex flex-col items-center gap-2 group relative">
                                         <div className="absolute -top-8 px-2 py-1 bg-sky text-white text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                            ₹{kubMRR.toLocaleString()}
+                                            ₹{kubARR.toLocaleString()}/yr
                                         </div>
                                         <div
                                             className="w-full bg-sky/20 border-t-4 border-sky rounded-t-lg transition-all duration-700 hover:bg-sky/30"
@@ -202,7 +248,7 @@ export default function FinancePage() {
 
                                     <div className="flex-1 flex flex-col items-center gap-2 group relative">
                                         <div className="absolute -top-8 px-2 py-1 bg-yellow text-background text-[10px] font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                            ₹{solMRR.toLocaleString()}
+                                            ₹{solARR.toLocaleString()}/yr
                                         </div>
                                         <div
                                             className="w-full bg-yellow/20 border-t-4 border-yellow rounded-t-lg transition-all duration-700 hover:bg-yellow/30"
@@ -223,15 +269,23 @@ export default function FinancePage() {
                             <Calendar className="w-5 h-5 text-pink" /> Recurring Expenses
                         </h3>
                         <div className="card divide-y divide-border/50">
-                            {expenses.length > 0 ? expenses.map((exp) => (
-                                <div key={exp.id} className="p-4 flex items-center justify-between hover:bg-border/10 transition-colors">
-                                    <div>
-                                        <p className="font-bold text-text-primary">{exp.name}</p>
-                                        <p className="text-xs text-text-secondary">{exp.category} • {exp.frequency}</p>
+                            {expenses.length > 0 ? expenses.map((exp) => {
+                                const monthlyAmt = getMonthlyAmount(exp);
+                                return (
+                                    <div key={exp.id} className="p-4 flex items-center justify-between hover:bg-border/10 transition-colors">
+                                        <div>
+                                            <p className="font-bold text-text-primary">{exp.name}</p>
+                                            <p className="text-xs text-text-secondary">{exp.category} • {exp.frequency}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-bold text-red-400">₹{Number(exp.amount).toLocaleString()}</p>
+                                            {exp.frequency !== 'monthly' && exp.frequency !== 'one-time' && (
+                                                <p className="text-[10px] text-text-secondary">≈ ₹{monthlyAmt.toLocaleString()}/mo</p>
+                                            )}
+                                        </div>
                                     </div>
-                                    <p className="font-bold text-red-400">₹{Number(exp.amount).toLocaleString()}</p>
-                                </div>
-                            )) : (
+                                );
+                            }) : (
                                 <div className="p-8 text-center text-text-secondary">No expenses recorded.</div>
                             )}
                         </div>
@@ -251,7 +305,7 @@ export default function FinancePage() {
                                     </div>
                                     <div className="text-right">
                                         <p className="font-bold text-green">₹{Number(client.recurring_profit).toLocaleString()}</p>
-                                        <p className="text-[10px] text-text-secondary">Monthly Recurring</p>
+                                        <p className="text-[10px] text-text-secondary">Annual Recurring</p>
                                     </div>
                                 </div>
                             )) : (
@@ -305,7 +359,8 @@ export default function FinancePage() {
                                 className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-green/50 outline-none"
                             >
                                 <option value="monthly">Monthly</option>
-                                <option value="yearly">Yearly</option>
+                                <option value="quarterly">Quarterly</option>
+                                <option value="annual">Annual</option>
                                 <option value="one-time">One-time</option>
                             </select>
                         </div>

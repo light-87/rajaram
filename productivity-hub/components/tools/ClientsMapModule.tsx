@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import "leaflet/dist/leaflet.css";
 import { ProductBrand, BusinessClient } from "@/types/database";
-import { Search, Loader2, ExternalLink } from "lucide-react";
+import { Search, Loader2, ExternalLink, X } from "lucide-react";
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(() => import("react-leaflet").then((mod) => mod.MapContainer), { ssr: false }) as any;
@@ -20,6 +20,7 @@ interface MapModuleProps {
 export default function ClientsMapModule({ clients, brand = "all" }: MapModuleProps) {
     const [L, setL] = useState<any>(null);
     const [isLoaded, setIsLoaded] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
         // Load Leaflet on client side
@@ -36,6 +37,23 @@ export default function ClientsMapModule({ clients, brand = "all" }: MapModulePr
             setIsLoaded(true);
         });
     }, []);
+
+    // Filter clients based on search query
+    const filteredClients = useMemo(() => {
+        if (!searchQuery.trim()) return clients;
+
+        const query = searchQuery.toLowerCase();
+        return clients.filter(client =>
+            client.name?.toLowerCase().includes(query) ||
+            client.address?.toLowerCase().includes(query) ||
+            client.company?.toLowerCase().includes(query)
+        );
+    }, [clients, searchQuery]);
+
+    // Calculate map bounds based on filtered clients with valid coordinates
+    const clientsWithCoords = useMemo(() => {
+        return filteredClients.filter(c => c.latitude && c.longitude);
+    }, [filteredClients]);
 
     if (!isLoaded) {
         return (
@@ -54,10 +72,27 @@ export default function ClientsMapModule({ clients, brand = "all" }: MapModulePr
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
                 <input
                     type="text"
-                    placeholder="Search by address or area..."
-                    className="w-full pl-10 pr-4 py-3 bg-background-card border border-border/50 rounded-xl focus:border-pink/50 outline-none transition-all"
+                    placeholder="Search by name, address, or company..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-10 py-3 bg-background-card border border-border/50 rounded-xl focus:border-pink/50 outline-none transition-all"
                 />
+                {searchQuery && (
+                    <button
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary transition-colors"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                )}
             </div>
+
+            {searchQuery && (
+                <p className="text-xs text-text-secondary">
+                    Showing {clientsWithCoords.length} of {filteredClients.length} matching clients on map
+                    {filteredClients.length !== clients.length && ` (filtered from ${clients.length} total)`}
+                </p>
+            )}
 
             <div className="h-[600px] w-full rounded-2xl overflow-hidden border border-border/50 z-0">
                 <MapContainer center={center} zoom={5} style={{ height: "100%", width: "100%" }}>
@@ -66,9 +101,7 @@ export default function ClientsMapModule({ clients, brand = "all" }: MapModulePr
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
 
-                    {clients.map((client) => {
-                        if (!client.latitude || !client.longitude) return null;
-
+                    {clientsWithCoords.map((client) => {
                         // Create custom icon based on brand
                         const icon = new L.Icon({
                             iconUrl: client.brand === 'Kuberbook'
