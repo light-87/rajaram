@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { BusinessClient, ProductBrand, SalesAgent } from "@/types/database";
-import { Edit2, DollarSign, MapPin, Search, Save, X, ExternalLink, Trash2 } from "lucide-react";
+import { Edit2, DollarSign, MapPin, Search, Save, X, ExternalLink, Trash2, Clock, CheckCircle2 } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { showToast } from "@/components/ui/Toast";
 import { logActivity } from "@/lib/tools-utils";
@@ -95,6 +95,51 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
         }
     };
 
+    const [isPaidModalOpen, setIsPaidModalOpen] = useState(false);
+    const [paidClient, setPaidClient] = useState<BusinessClient | null>(null);
+    const [paidData, setPaidData] = useState({
+        setup_profit: "",
+        recurring_profit: ""
+    });
+
+    const handleMarkAsPaid = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!paidClient) return;
+        setIsSubmitting(true);
+        try {
+            const { error } = await supabase
+                .from("business_clients")
+                .update({
+                    is_free_trial: false,
+                    is_trial_converted: true,
+                    trial_converted_at: new Date().toISOString(),
+                    status: "active",
+                    setup_profit: parseFloat(paidData.setup_profit) || 0,
+                    recurring_profit: parseFloat(paidData.recurring_profit) || 0
+                })
+                .eq("id", paidClient.id);
+
+            if (error) throw error;
+
+            await logActivity(
+                "Trial Converted to Paid",
+                `"${paidClient.name}" free trial converted to paid client (Setup: Rs.${paidData.setup_profit}, Recurring: Rs.${paidData.recurring_profit})`,
+                employee?.username
+            );
+
+            showToast("Client marked as paid! Financials updated.");
+            setIsPaidModalOpen(false);
+            setPaidClient(null);
+            setPaidData({ setup_profit: "", recurring_profit: "" });
+            onUpdate();
+        } catch (error) {
+            console.error("Error converting trial:", error);
+            showToast("Failed to update client", "error");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleDeleteClient = async (client: BusinessClient) => {
         if (!confirm(`Are you sure you want to delete the client "${client.name}"?\n\nThis will also delete all related payments and follow-ups. This action cannot be undone.`)) {
             return;
@@ -142,13 +187,25 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
 
             <div className="grid grid-cols-1 gap-4">
                 {filteredClients.map((client) => (
-                    <div key={client.id} className="card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:border-sky/30 transition-all">
+                    <div key={client.id} className={`card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all ${client.is_free_trial ? 'hover:border-purple/30 border-purple/10' : 'hover:border-sky/30'}`}>
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 bg-sky/10 rounded-2xl flex items-center justify-center text-sky shrink-0">
-                                <DollarSign className="w-6 h-6" />
+                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${client.is_free_trial ? 'bg-purple/10 text-purple' : 'bg-sky/10 text-sky'}`}>
+                                {client.is_free_trial ? <Clock className="w-6 h-6" /> : <DollarSign className="w-6 h-6" />}
                             </div>
                             <div>
-                                <h4 className="text-lg font-bold text-text-primary">{client.name}</h4>
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-lg font-bold text-text-primary">{client.name}</h4>
+                                    {client.is_free_trial && (
+                                        <span className="text-[10px] px-2 py-0.5 bg-purple/10 text-purple rounded-full font-bold border border-purple/20">
+                                            FREE TRIAL {client.trial_months ? `(${client.trial_months}mo)` : ""}
+                                        </span>
+                                    )}
+                                    {client.is_trial_converted && (
+                                        <span className="text-[10px] px-2 py-0.5 bg-green/10 text-green rounded-full font-bold border border-green/20 flex items-center gap-0.5">
+                                            <CheckCircle2 className="w-2.5 h-2.5" /> CONVERTED
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="space-y-1 mt-1">
                                     <p className="text-sm text-text-secondary flex items-center gap-1">
                                         <MapPin className="w-3 h-3 text-red-400" /> {client.address}
@@ -187,6 +244,18 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
                             </div>
 
                             <div className="flex gap-2 ml-auto">
+                                {client.is_free_trial && !client.is_trial_converted && (
+                                    <button
+                                        onClick={() => {
+                                            setPaidClient(client);
+                                            setPaidData({ setup_profit: "", recurring_profit: "" });
+                                            setIsPaidModalOpen(true);
+                                        }}
+                                        className="px-3 py-2 bg-green/10 text-green hover:bg-green/20 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                                    >
+                                        <DollarSign className="w-3.5 h-3.5" /> Mark as Paid
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => handleEditClick(client)}
                                     className="p-2 bg-border/20 rounded-lg text-text-secondary hover:text-sky hover:bg-sky/10 transition-all"
@@ -207,6 +276,71 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
                     </div>
                 ))}
             </div>
+
+            {/* Mark as Paid Modal */}
+            <Modal
+                isOpen={isPaidModalOpen}
+                onClose={() => { setIsPaidModalOpen(false); setPaidClient(null); }}
+                title="Convert Trial to Paid"
+                color="green"
+                size="md"
+            >
+                <form onSubmit={handleMarkAsPaid} className="space-y-4 p-2">
+                    <div className="p-4 bg-green/5 border border-green/20 rounded-xl">
+                        <p className="text-sm font-bold text-text-primary">{paidClient?.name}</p>
+                        <p className="text-xs text-text-secondary mt-1">
+                            Trial period: {paidClient?.trial_months} month{(paidClient?.trial_months || 0) > 1 ? 's' : ''}
+                            {paidClient?.trial_end_date && ` (ends ${new Date(paidClient.trial_end_date).toLocaleDateString()})`}
+                        </p>
+                    </div>
+
+                    <p className="text-xs text-text-secondary">
+                        Enter the financials now that the client has paid. This will add them to your finance tracking.
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-text-secondary uppercase">Setup Profit (Rs.)</label>
+                            <input
+                                required
+                                type="number"
+                                placeholder="10000"
+                                value={paidData.setup_profit}
+                                onChange={e => setPaidData({ ...paidData, setup_profit: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-green/50 outline-none"
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-text-secondary uppercase">Recurring Profit/yr (Rs.)</label>
+                            <input
+                                required
+                                type="number"
+                                placeholder="24000"
+                                value={paidData.recurring_profit}
+                                onChange={e => setPaidData({ ...paidData, recurring_profit: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-green/50 outline-none"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex gap-4 pt-4">
+                        <button
+                            type="button"
+                            onClick={() => { setIsPaidModalOpen(false); setPaidClient(null); }}
+                            className="flex-1 py-3 bg-border/20 rounded-xl font-bold transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="flex-1 py-3 bg-green text-white rounded-xl font-bold shadow-lg hover:bg-green/90 transition-all disabled:opacity-50"
+                        >
+                            {isSubmitting ? 'Updating...' : 'Confirm Payment & Activate'}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
 
             {/* Edit Modal */}
             <Modal

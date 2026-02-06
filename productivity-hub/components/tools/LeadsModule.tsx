@@ -62,7 +62,9 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
         setup_profit: "",
         recurring_profit: "",
         agent_name: "",
-        agent_incentive: ""
+        agent_incentive: "",
+        is_free_trial: false,
+        trial_months: "1"
     });
 
     // Follow-up State
@@ -235,24 +237,41 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
         if (!selectedLead) return;
         setIsSubmitting(true);
         try {
+            const isTrial = clientData.is_free_trial;
+            const trialMonths = parseInt(clientData.trial_months) || 1;
+
+            // Calculate trial end date
+            let trialEndDate: string | null = null;
+            if (isTrial) {
+                const end = new Date();
+                end.setMonth(end.getMonth() + trialMonths);
+                trialEndDate = end.toISOString().split('T')[0];
+            }
+
             // 1. Insert into business_clients - include phone and email from lead
-            const { error: clientError } = await supabase.from("business_clients").insert({
+            const insertData: Record<string, unknown> = {
                 name: selectedLead.customer_name,
                 brand: selectedLead.brand,
-                phone: selectedLead.phone,        // Copy phone from lead
-                email: selectedLead.email,        // Copy email from lead
+                phone: selectedLead.phone,
+                email: selectedLead.email,
                 address: selectedLead.address,
                 latitude: selectedLead.latitude,
                 longitude: selectedLead.longitude,
                 google_maps_link: selectedLead.google_maps_link,
-                setup_profit: parseFloat(clientData.setup_profit) || 0,
-                recurring_profit: parseFloat(clientData.recurring_profit) || 0,
+                setup_profit: isTrial ? 0 : (parseFloat(clientData.setup_profit) || 0),
+                recurring_profit: isTrial ? 0 : (parseFloat(clientData.recurring_profit) || 0),
                 agent_name: clientData.agent_name,
                 agent_incentive: parseFloat(clientData.agent_incentive) || 0,
                 payment_frequency: "monthly",
-                status: "active",
-                created_by: employee?.id
-            });
+                status: isTrial ? "trial" : "active",
+                created_by: employee?.id,
+                is_free_trial: isTrial,
+                trial_months: isTrial ? trialMonths : null,
+                trial_end_date: trialEndDate,
+                is_trial_converted: false
+            };
+
+            const { error: clientError } = await supabase.from("business_clients").insert(insertData);
 
             if (clientError) throw clientError;
 
@@ -263,8 +282,6 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                 .eq("id", selectedLead.id);
 
             if (leadError) {
-                // If lead update fails, we should ideally rollback the client creation
-                // For now, just log and show error - the client was created
                 console.error("Failed to update lead status:", leadError);
                 showToast("Client created but lead status update failed", "error");
             }
@@ -272,15 +289,15 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
             // 3. Log Activity
             await logActivity(
                 "Lead Converted",
-                `Lead "${selectedLead.customer_name}" converted to Business Client`,
+                `Lead "${selectedLead.customer_name}" converted to ${isTrial ? `Free Trial (${trialMonths} month${trialMonths > 1 ? 's' : ''})` : 'Business Client'}`,
                 employee?.username,
                 employee?.id
             );
 
             // 4. Reset & Close
             setIsConvertModalOpen(false);
-            setClientData({ setup_profit: "", recurring_profit: "", agent_name: "", agent_incentive: "" });
-            showToast("Lead converted to Client!");
+            setClientData({ setup_profit: "", recurring_profit: "", agent_name: "", agent_incentive: "", is_free_trial: false, trial_months: "1" });
+            showToast(isTrial ? "Free trial client created!" : "Lead converted to Client!");
             if (onConvert) onConvert();
             fetchLeads();
         } catch (error) {
@@ -794,8 +811,44 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                         </div>
                     </div>
 
+                    {/* Free Trial Toggle */}
+                    <div className="border border-border/50 rounded-xl p-4 space-y-3">
+                        <label className="flex items-center gap-3 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={clientData.is_free_trial}
+                                onChange={(e) => setClientData({ ...clientData, is_free_trial: e.target.checked })}
+                                className="w-4 h-4 accent-purple"
+                            />
+                            <span className="text-sm font-bold text-text-primary">Free Trial</span>
+                            <span className="text-[10px] text-text-secondary">(No financials until converted to paid)</span>
+                        </label>
+
+                        {clientData.is_free_trial && (
+                            <div className="space-y-1 pl-7">
+                                <label className="text-xs font-bold text-text-secondary uppercase">Trial Duration</label>
+                                <select
+                                    value={clientData.trial_months}
+                                    onChange={e => setClientData({ ...clientData, trial_months: e.target.value })}
+                                    className="w-full px-4 py-2 bg-background border border-border/50 rounded-xl focus:border-purple/50 outline-none text-sm"
+                                >
+                                    <option value="1">1 month</option>
+                                    <option value="2">2 months</option>
+                                    <option value="3">3 months</option>
+                                    <option value="6">6 months</option>
+                                </select>
+                                <p className="text-[10px] text-purple italic">
+                                    Client will be added without financials. Mark as Paid later to include in finance.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
                     <p className="text-[10px] text-text-secondary italic pt-2">
-                        Conversion will create an active client. Total contract value is derived from profits.
+                        {clientData.is_free_trial
+                            ? "Free trial will create a client without affecting financials. Convert to paid after trial ends."
+                            : "Conversion will create an active client. Total contract value is derived from profits."
+                        }
                     </p>
 
                     <div className="flex gap-4 pt-4">
@@ -811,7 +864,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                             disabled={isSubmitting}
                             className={`flex-1 py-3 text-white rounded-xl font-bold shadow-lg transition-all ${brand === 'Kuberbook' ? 'bg-sky hover:bg-sky/90' : 'bg-yellow hover:bg-yellow/90'} disabled:opacity-50`}
                         >
-                            {isSubmitting ? 'Converting...' : 'Complete Conversion'}
+                            {isSubmitting ? 'Converting...' : clientData.is_free_trial ? 'Start Free Trial' : 'Complete Conversion'}
                         </button>
                     </div>
                 </form>
