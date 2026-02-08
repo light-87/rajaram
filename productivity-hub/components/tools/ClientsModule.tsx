@@ -107,6 +107,12 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
         if (!paidClient) return;
         setIsSubmitting(true);
         try {
+            // Next payment due is 1 year from the original trial start date (contract_start_date)
+            // If no contract_start_date, use created_at
+            const startDate = new Date(paidClient.contract_start_date || paidClient.created_at);
+            const nextPaymentDue = new Date(startDate);
+            nextPaymentDue.setFullYear(nextPaymentDue.getFullYear() + 1);
+
             const { error } = await supabase
                 .from("business_clients")
                 .update({
@@ -115,11 +121,44 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
                     trial_converted_at: new Date().toISOString(),
                     status: "active",
                     setup_profit: parseFloat(paidData.setup_profit) || 0,
-                    recurring_profit: parseFloat(paidData.recurring_profit) || 0
+                    recurring_profit: parseFloat(paidData.recurring_profit) || 0,
+                    next_payment_due: nextPaymentDue.toISOString().split('T')[0]
                 })
                 .eq("id", paidClient.id);
 
             if (error) throw error;
+
+            // Auto-create payment records
+            const setupAmount = parseFloat(paidData.setup_profit) || 0;
+            const recurringAmount = parseFloat(paidData.recurring_profit) || 0;
+            const paymentRecords = [];
+
+            if (setupAmount > 0) {
+                paymentRecords.push({
+                    client_id: paidClient.id,
+                    amount: setupAmount,
+                    payment_date: new Date().toISOString().split('T')[0],
+                    payment_type: "setup",
+                    status: "completed",
+                    notes: "Auto-recorded on trial conversion to paid",
+                    recorded_by: employee?.id
+                });
+            }
+            if (recurringAmount > 0) {
+                paymentRecords.push({
+                    client_id: paidClient.id,
+                    amount: recurringAmount,
+                    payment_date: new Date().toISOString().split('T')[0],
+                    payment_type: "recurring",
+                    status: "completed",
+                    notes: "First year payment - auto-recorded on trial conversion",
+                    recorded_by: employee?.id
+                });
+            }
+
+            if (paymentRecords.length > 0) {
+                await supabase.from("payments").insert(paymentRecords);
+            }
 
             // Award 1000 points for trial-to-paid conversion
             if (employee?.id && paidClient.id) {

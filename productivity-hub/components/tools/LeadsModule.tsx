@@ -271,6 +271,12 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                 is_trial_converted: false
             };
 
+            // Calculate next_payment_due: 1 year from today for paid clients, 1 year from trial start for trials
+            const nextPaymentDue = new Date();
+            nextPaymentDue.setFullYear(nextPaymentDue.getFullYear() + 1);
+            insertData.contract_start_date = new Date().toISOString().split('T')[0];
+            insertData.next_payment_due = nextPaymentDue.toISOString().split('T')[0];
+
             const { data: newClient, error: clientError } = await supabase
                 .from("business_clients")
                 .insert(insertData)
@@ -290,7 +296,41 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                 showToast("Client created but lead status update failed", "error");
             }
 
-            // 3. Award 1000 points for non-trial conversions
+            // 3. Auto-create payment records for paid (non-trial) conversions
+            if (!isTrial && newClient?.id) {
+                const setupAmount = parseFloat(clientData.setup_profit) || 0;
+                const recurringAmount = parseFloat(clientData.recurring_profit) || 0;
+                const paymentRecords = [];
+
+                if (setupAmount > 0) {
+                    paymentRecords.push({
+                        client_id: newClient.id,
+                        amount: setupAmount,
+                        payment_date: new Date().toISOString().split('T')[0],
+                        payment_type: "setup",
+                        status: "completed",
+                        notes: "Auto-recorded on client conversion",
+                        recorded_by: employee?.id
+                    });
+                }
+                if (recurringAmount > 0) {
+                    paymentRecords.push({
+                        client_id: newClient.id,
+                        amount: recurringAmount,
+                        payment_date: new Date().toISOString().split('T')[0],
+                        payment_type: "recurring",
+                        status: "completed",
+                        notes: "First year payment - auto-recorded on client conversion",
+                        recorded_by: employee?.id
+                    });
+                }
+
+                if (paymentRecords.length > 0) {
+                    await supabase.from("payments").insert(paymentRecords);
+                }
+            }
+
+            // 4. Award 1000 points for non-trial conversions
             if (!isTrial && newClient?.id && employee?.id) {
                 await supabase.from("employee_points").insert({
                     employee_id: employee.id,
@@ -299,7 +339,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                 });
             }
 
-            // 4. Log Activity
+            // 5. Log Activity
             await logActivity(
                 "Lead Converted",
                 `Lead "${selectedLead.customer_name}" converted to ${isTrial ? `Free Trial (${trialMonths} month${trialMonths > 1 ? 's' : ''})` : 'Business Client'}`,
