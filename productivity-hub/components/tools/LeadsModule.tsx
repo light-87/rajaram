@@ -271,7 +271,11 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                 is_trial_converted: false
             };
 
-            const { error: clientError } = await supabase.from("business_clients").insert(insertData);
+            const { data: newClient, error: clientError } = await supabase
+                .from("business_clients")
+                .insert(insertData)
+                .select()
+                .single();
 
             if (clientError) throw clientError;
 
@@ -286,7 +290,16 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                 showToast("Client created but lead status update failed", "error");
             }
 
-            // 3. Log Activity
+            // 3. Award 1000 points for non-trial conversions
+            if (!isTrial && newClient?.id && employee?.id) {
+                await supabase.from("employee_points").insert({
+                    employee_id: employee.id,
+                    client_id: newClient.id,
+                    points: 1000
+                });
+            }
+
+            // 4. Log Activity
             await logActivity(
                 "Lead Converted",
                 `Lead "${selectedLead.customer_name}" converted to ${isTrial ? `Free Trial (${trialMonths} month${trialMonths > 1 ? 's' : ''})` : 'Business Client'}`,
@@ -294,7 +307,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                 employee?.id
             );
 
-            // 4. Reset & Close
+            // 5. Reset & Close
             setIsConvertModalOpen(false);
             setClientData({ setup_profit: "", recurring_profit: "", agent_name: "", agent_incentive: "", is_free_trial: false, trial_months: "1" });
             showToast(isTrial ? "Free trial client created!" : "Lead converted to Client!");

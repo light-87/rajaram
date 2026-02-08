@@ -121,13 +121,22 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
 
             if (error) throw error;
 
+            // Award 1000 points for trial-to-paid conversion
+            if (employee?.id && paidClient.id) {
+                await supabase.from("employee_points").insert({
+                    employee_id: employee.id,
+                    client_id: paidClient.id,
+                    points: 1000
+                });
+            }
+
             await logActivity(
                 "Trial Converted to Paid",
                 `"${paidClient.name}" free trial converted to paid client (Setup: Rs.${paidData.setup_profit}, Recurring: Rs.${paidData.recurring_profit})`,
                 employee?.username
             );
 
-            showToast("Client marked as paid! Financials updated.");
+            showToast("Client marked as paid! 1,000 points awarded!");
             setIsPaidModalOpen(false);
             setPaidClient(null);
             setPaidData({ setup_profit: "", recurring_profit: "" });
