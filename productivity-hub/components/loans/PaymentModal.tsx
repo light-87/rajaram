@@ -84,6 +84,16 @@ export default function PaymentModal({
 
       if (loanError) throw loanError;
 
+      // Auto-create expense entry in personal finance tracker
+      await supabase.from("personal_expenses").insert({
+        amount: amountPaid,
+        category: "Loan Payment",
+        description: `${loan.name} - ${formData.payment_type === "extra" ? "Extra payment" : "EMI"}${formData.notes ? ` (${formData.notes})` : ""}`,
+        date: formData.payment_date,
+        source: "loan_payment",
+        source_id: loan.id,
+      });
+
       showToast("Payment logged successfully!", "success");
       onPaymentAdded();
     } catch (error) {

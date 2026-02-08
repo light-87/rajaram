@@ -22,15 +22,46 @@ export interface LoanPayment {
   created_at: string;
 }
 
-export type TimeCategory = "Apply Jobs" | "Thesis Work" | "Uni Study" | "Gym" | "Personal work" | "CEO work";
+// --- Personal Finance Types ---
 
-export interface TimeEntry {
+export type IncomeSource = "Salary" | "Dividend" | "Freelance" | "Other";
+
+export interface PersonalIncome {
   id: string;
+  amount: number;
   date: string;
-  category: TimeCategory;
-  hours: number;
-  effort_points: number;
+  source: IncomeSource;
+  notes?: string;
+  created_at: string;
+}
+
+export type RecurringFrequency = "weekly" | "monthly" | "quarterly" | "yearly";
+export type RecurringCategory = "Subscription" | "Loan EMI" | "Insurance" | "Rent" | "Utilities" | "Education" | "Other";
+
+export interface RecurringPayment {
+  id: string;
+  name: string;
+  amount: number;
+  frequency: RecurringFrequency;
+  category: RecurringCategory;
+  next_due_date?: string;
+  is_active: boolean;
+  auto_renew: boolean;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ExpenseCategory = "Food" | "Transport" | "Shopping" | "Entertainment" | "Health" | "Education" | "Subscription" | "Loan Payment" | "Utilities" | "Misc";
+
+export interface PersonalExpense {
+  id: string;
+  amount: number;
+  category: ExpenseCategory;
   description?: string;
+  date: string;
+  source?: string;
+  source_id?: string;
   created_at: string;
 }
 

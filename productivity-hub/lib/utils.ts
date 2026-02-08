@@ -77,19 +77,6 @@ export function getCurrentWeek(): { start: Date; end: Date } {
 }
 
 /**
- * Calculate effort points based on category and hours
- */
-export function calculateEffortPoints(
-  category: string,
-  hours: number
-): number {
-  if (category === "Gym") {
-    return 1;
-  }
-  return hours * 1;
-}
-
-/**
  * Check if date string is today
  */
 export function isToday(dateString: string): boolean {

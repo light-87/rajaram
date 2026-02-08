@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   Home,
   Target,
-  Clock,
+  Wallet,
   CheckSquare,
   Heart,
   DollarSign,
@@ -15,10 +15,10 @@ import {
   Calendar,
   Zap,
   ArrowRight,
-  Sparkles,
   BookOpen,
   Users,
   Banknote,
+  RefreshCw,
 } from "lucide-react";
 import { format, startOfWeek, addDays, parseISO, differenceInDays } from "date-fns";
 import StatCard from "@/components/ui/StatCard";
@@ -34,9 +34,9 @@ interface DashboardData {
   freedomPercentage: number;
   dailyInterest: number;
   monthsToFreedom: number;
-  todayHours: number;
-  todayPoints: number;
-  weeklyHours: number[];
+  thisMonthIncome: number;
+  thisMonthExpenses: number;
+  monthlyRecurring: number;
   activeTodos: number;
   overdueTodos: Todo[];
   todayTodos: Todo[];
@@ -48,6 +48,7 @@ interface DashboardData {
   revenueDueToday: number;
   upcomingPayments: Client[];
   activeClients: number;
+  upcomingRecurring: any[];
 }
 
 // Quick access features with colorful styling
@@ -62,13 +63,13 @@ const quickAccessFeatures = [
     icon: CheckSquare,
   },
   {
-    name: "Time",
-    description: "Log your hours",
+    name: "Finance",
+    description: "Track money flow",
     bgColor: "bg-sky/10",
     borderColor: "border-sky/30 hover:border-sky/50",
     iconColor: "text-sky",
-    href: "/vaibhav/time",
-    icon: Clock,
+    href: "/vaibhav/finance",
+    icon: Wallet,
   },
   {
     name: "Journal",
@@ -105,9 +106,9 @@ export default function DashboardPage() {
     freedomPercentage: 0,
     dailyInterest: 0,
     monthsToFreedom: 0,
-    todayHours: 0,
-    todayPoints: 0,
-    weeklyHours: [],
+    thisMonthIncome: 0,
+    thisMonthExpenses: 0,
+    monthlyRecurring: 0,
     activeTodos: 0,
     overdueTodos: [],
     todayTodos: [],
@@ -119,6 +120,7 @@ export default function DashboardPage() {
     revenueDueToday: 0,
     upcomingPayments: [],
     activeClients: 0,
+    upcomingRecurring: [],
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -129,9 +131,9 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
-      const [loanData, timeData, todosData, journalData, clientsData] = await Promise.all([
+      const [loanData, financeData, todosData, journalData, clientsData] = await Promise.all([
         fetchLoanData(),
-        fetchTimeData(),
+        fetchFinanceData(),
         fetchTodosData(),
         fetchJournalData(),
         fetchClientsData(),
@@ -139,7 +141,7 @@ export default function DashboardPage() {
 
       setData({
         ...loanData,
-        ...timeData,
+        ...financeData,
         ...todosData,
         ...journalData,
         ...clientsData,
@@ -188,30 +190,50 @@ export default function DashboardPage() {
     return { loan: null, freedomPercentage: 0, dailyInterest: 0, monthsToFreedom: 0 };
   };
 
-  const fetchTimeData = async () => {
+  const fetchFinanceData = async () => {
     try {
-      const today = format(new Date(), "yyyy-MM-dd");
-      const startOfThisWeek = startOfWeek(new Date(), { weekStartsOn: 0 });
+      const currentMonth = format(new Date(), "yyyy-MM");
 
-      const { data: todayEntries } = await supabase.from("time_entries").select("*").eq("date", today);
+      const [incomeRes, expensesRes, recurringRes] = await Promise.all([
+        supabase.from("personal_income").select("amount, date"),
+        supabase.from("personal_expenses").select("amount, date"),
+        supabase.from("recurring_payments").select("*").eq("is_active", true),
+      ]);
 
-      const todayHours = todayEntries?.reduce((sum: number, entry: any) => sum + parseFloat(entry.hours || "0"), 0) || 0;
-      const todayPoints =
-        todayEntries?.reduce((sum: number, entry: any) => sum + parseFloat(entry.effort_points || "0"), 0) || 0;
+      const allIncome = (incomeRes.data || []).map((d: any) => ({ ...d, amount: parseFloat(d.amount) }));
+      const allExpenses = (expensesRes.data || []).map((d: any) => ({ ...d, amount: parseFloat(d.amount) }));
+      const recurring = (recurringRes.data || []).map((d: any) => ({ ...d, amount: parseFloat(d.amount) }));
 
-      const weeklyHours: number[] = [];
-      for (let i = 0; i < 7; i++) {
-        const date = format(addDays(startOfThisWeek, i), "yyyy-MM-dd");
-        const { data: dayEntries } = await supabase.from("time_entries").select("hours").eq("date", date);
-        const dayTotal = dayEntries?.reduce((sum: number, entry: any) => sum + parseFloat(entry.hours || "0"), 0) || 0;
-        weeklyHours.push(dayTotal);
-      }
+      const thisMonthIncome = allIncome
+        .filter((e: any) => e.date.startsWith(currentMonth))
+        .reduce((sum: number, e: any) => sum + e.amount, 0);
 
-      return { todayHours, todayPoints, weeklyHours };
+      const thisMonthExpenses = allExpenses
+        .filter((e: any) => e.date.startsWith(currentMonth))
+        .reduce((sum: number, e: any) => sum + e.amount, 0);
+
+      const monthlyRecurring = recurring.reduce((sum: number, r: any) => {
+        switch (r.frequency) {
+          case "weekly": return sum + r.amount * 4.33;
+          case "monthly": return sum + r.amount;
+          case "quarterly": return sum + r.amount / 3;
+          case "yearly": return sum + r.amount / 12;
+          default: return sum;
+        }
+      }, 0);
+
+      // Upcoming recurring in next 7 days
+      const upcomingRecurring = recurring.filter((r: any) => {
+        if (!r.next_due_date) return false;
+        const days = differenceInDays(new Date(r.next_due_date), new Date());
+        return days >= 0 && days <= 7;
+      });
+
+      return { thisMonthIncome, thisMonthExpenses, monthlyRecurring, upcomingRecurring };
     } catch (error) {
-      console.error("Error fetching time data:", error);
+      console.error("Error fetching finance data:", error);
     }
-    return { todayHours: 0, todayPoints: 0, weeklyHours: [] };
+    return { thisMonthIncome: 0, thisMonthExpenses: 0, monthlyRecurring: 0, upcomingRecurring: [] };
   };
 
   const fetchTodosData = async () => {
@@ -359,6 +381,8 @@ export default function DashboardPage() {
     return emojis[energy - 1] || "⚡";
   };
 
+  const netThisMonth = data.thisMonthIncome - data.thisMonthExpenses - data.monthlyRecurring;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
@@ -438,10 +462,15 @@ export default function DashboardPage() {
 
       {/* Today's Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard title="Today's Effort" value={`${data.todayHours.toFixed(1)}/10`} icon={Clock} color="sky">
-          <div className="mt-2">
-            <ProgressBar percentage={(data.todayHours / 10) * 100} showLabel={false} size="sm" color="sky" />
-            <p className="text-sm text-text-secondary mt-2">{data.todayPoints.toFixed(1)} points earned</p>
+        <StatCard
+          title="Monthly Cash Flow"
+          value={`${netThisMonth >= 0 ? "+" : ""}${formatCurrency(netThisMonth)}`}
+          icon={Wallet}
+          color="sky"
+        >
+          <div className="mt-2 space-y-1">
+            <p className="text-xs text-green">In: {formatCurrency(data.thisMonthIncome)}</p>
+            <p className="text-xs text-coral">Out: {formatCurrency(data.thisMonthExpenses + data.monthlyRecurring)}</p>
           </div>
         </StatCard>
 
@@ -470,50 +499,63 @@ export default function DashboardPage() {
         </StatCard>
       </div>
 
-      {/* Two Column Layout: 7-Day Trends + Urgent Actions */}
+      {/* Two Column Layout: Finance Summary + Urgent Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* 7-Day Trends */}
+        {/* Finance Summary */}
         <div className="card p-6">
           <div className="flex items-center gap-2 mb-6">
             <div className="p-2 rounded-xl bg-sky/15">
               <TrendingUp className="w-5 h-5 text-sky" />
             </div>
-            <h3 className="text-xl font-bold text-text-primary">7-Day Trends</h3>
+            <h3 className="text-xl font-bold text-text-primary">Finance Summary</h3>
           </div>
 
-          {/* Effort Chart */}
-          <div className="mb-6">
-            <h4 className="text-sm font-semibold text-text-secondary mb-3">Daily Effort (Hours)</h4>
-            <div className="flex items-end gap-2 h-32 mb-2">
-              {data.weeklyHours.map((hours: number, index: number) => {
-                const dayLabel = format(addDays(startOfWeek(new Date(), { weekStartsOn: 0 }), index), "EEE");
-                const percentage = (hours / 10) * 100;
-                const color = hours >= 10 ? "bg-green" : hours > 0 ? "bg-sky" : "bg-border";
-
-                return (
-                  <div key={index} className="flex-1 flex flex-col items-center gap-1">
-                    <div className="w-full bg-background rounded-lg overflow-hidden h-20 flex items-end">
-                      <div
-                        className={`w-full ${color} transition-all rounded-t-lg`}
-                        style={{ height: `${Math.min(percentage, 100)}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-text-secondary">{dayLabel}</span>
-                    <span className="text-xs font-semibold text-text-primary">{hours.toFixed(1)}</span>
-                  </div>
-                );
-              })}
+          {/* Monthly Breakdown */}
+          <div className="space-y-4 mb-6">
+            <div className="flex items-center justify-between p-3 rounded-lg bg-green/10 border border-green/30">
+              <span className="text-sm font-medium text-text-primary">Income This Month</span>
+              <span className="font-bold text-green">{formatCurrency(data.thisMonthIncome)}</span>
             </div>
-            <div className="pt-2 text-sm text-text-secondary border-t border-border">
-              Week total:{" "}
-              <span className="font-semibold text-sky">
-                {data.weeklyHours.reduce((a: number, b: number) => a + b, 0).toFixed(1)} hrs
+            <div className="flex items-center justify-between p-3 rounded-lg bg-coral/10 border border-coral/30">
+              <span className="text-sm font-medium text-text-primary">Expenses This Month</span>
+              <span className="font-bold text-coral">{formatCurrency(data.thisMonthExpenses)}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-purple/10 border border-purple/30">
+              <span className="text-sm font-medium text-text-primary">Monthly Recurring</span>
+              <span className="font-bold text-purple">{formatCurrency(data.monthlyRecurring)}</span>
+            </div>
+            <div className={`flex items-center justify-between p-3 rounded-lg border ${netThisMonth >= 0 ? "bg-green/10 border-green/30" : "bg-red-500/10 border-red-500/30"}`}>
+              <span className="text-sm font-bold text-text-primary">Net Savings</span>
+              <span className={`font-bold text-lg ${netThisMonth >= 0 ? "text-green" : "text-red-400"}`}>
+                {netThisMonth >= 0 ? "+" : ""}{formatCurrency(netThisMonth)}
               </span>
             </div>
           </div>
 
+          {/* Upcoming Recurring */}
+          {data.upcomingRecurring.length > 0 && (
+            <div>
+              <h4 className="text-sm font-semibold text-text-secondary mb-3 flex items-center gap-2">
+                <RefreshCw className="w-3 h-3" /> Upcoming Recurring (7 days)
+              </h4>
+              <div className="space-y-2">
+                {data.upcomingRecurring.slice(0, 4).map((r: any) => (
+                  <div key={r.id} className="flex items-center justify-between text-sm">
+                    <span className="text-text-primary">{r.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-text-secondary">
+                        {r.next_due_date && format(new Date(r.next_due_date), "dd MMM")}
+                      </span>
+                      <span className="font-semibold text-coral">{formatCurrency(parseFloat(r.amount))}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Mood & Streak */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 mt-6">
             <div className="bg-purple/10 rounded-xl p-4 border border-purple/30">
               <p className="text-sm text-text-secondary mb-2">Avg Mood</p>
               <p className="text-2xl font-bold text-purple">
@@ -588,12 +630,12 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Upcoming Payments */}
+            {/* Upcoming Client Payments */}
             {data.upcomingPayments.length > 0 && (
               <div className="bg-green/10 border border-green/30 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign className="w-4 h-4 text-green" />
-                  <span className="font-semibold text-green">Upcoming Payments (7 days)</span>
+                  <span className="font-semibold text-green">Upcoming Client Payments (7 days)</span>
                 </div>
                 <div className="space-y-2">
                   {data.upcomingPayments.slice(0, 3).map((client: any) => (

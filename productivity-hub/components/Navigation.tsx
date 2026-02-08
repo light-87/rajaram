@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   Banknote,
-  Clock,
+  Wallet,
   Users,
   BookOpen,
   CheckSquare,
@@ -26,9 +26,9 @@ const navItems = [
     hoverClasses: "hover:bg-pink/10 hover:text-pink",
   },
   {
-    href: "/vaibhav/time",
-    label: "Time",
-    icon: Clock,
+    href: "/vaibhav/finance",
+    label: "Finance",
+    icon: Wallet,
     color: "sky",
     activeClasses: "bg-sky/15 text-sky border-sky/30",
     hoverClasses: "hover:bg-sky/10 hover:text-sky",
