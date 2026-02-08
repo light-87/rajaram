@@ -169,6 +169,11 @@ export interface BusinessClient {
   contract_end_date?: string;
   next_payment_due?: string;
   payment_status?: 'current' | 'due' | 'overdue';
+  is_free_trial?: boolean;
+  trial_months?: number;
+  trial_end_date?: string;
+  is_trial_converted?: boolean;
+  trial_converted_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -289,6 +294,74 @@ export interface SalesTarget {
   updated_at: string;
   // Joined fields
   employee_name?: string;
+}
+
+// --- Employee Points System ---
+
+export interface EmployeePoints {
+  id: string;
+  employee_id: string;
+  client_id: string;
+  points: number;
+  is_redeemed: boolean;
+  redeemed_at?: string;
+  created_at: string;
+  // Joined fields
+  employee_name?: string;
+  client_name?: string;
+}
+
+export interface PointMilestone {
+  id: string;
+  milestone_count: number;
+  label: string;
+  reached_at?: string;
+  created_at: string;
+}
+
+export interface PointRedemption {
+  id: string;
+  employee_id: string;
+  points_redeemed: number;
+  milestone_id?: string;
+  notes?: string;
+  created_at: string;
+  // Joined fields
+  employee_name?: string;
+  milestone_label?: string;
+}
+
+// --- Announcements ---
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  link_url?: string;
+  link_label?: string;
+  is_pinned: boolean;
+  created_by?: string;
+  created_by_name?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- Customer Assignment Tracker ---
+
+export type AssignmentStatus = 'active' | 'completed' | 'on_hold';
+
+export interface CustomerAssignment {
+  id: string;
+  customer_name: string;
+  company_name: string;
+  assigned_to: string;
+  assigned_to_name?: string;
+  brand?: string;
+  status: AssignmentStatus;
+  notes?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Dashboard Summary Types

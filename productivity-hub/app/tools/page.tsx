@@ -27,6 +27,9 @@ import { supabase } from "@/lib/supabase";
 import { Lead, BusinessClient, FollowUp, Notification, ActivityLog } from "@/types/database";
 import { format, isToday, isPast, formatDistanceToNow } from "date-fns";
 import { showToast } from "@/components/ui/Toast";
+import EmployeePointsCard from "@/components/tools/EmployeePointsCard";
+import AnnouncementBoard from "@/components/tools/AnnouncementBoard";
+import CustomerAssignmentTracker from "@/components/tools/CustomerAssignmentTracker";
 
 interface DashboardData {
     totalLeads: number;
@@ -40,6 +43,7 @@ interface DashboardData {
     notifications: Notification[];
     kuberbookLeads: number;
     solarLeads: number;
+    trialClients: BusinessClient[];
 }
 
 export default function ToolsPage() {
@@ -56,7 +60,8 @@ export default function ToolsPage() {
         recentActivity: [],
         notifications: [],
         kuberbookLeads: 0,
-        solarLeads: 0
+        solarLeads: 0,
+        trialClients: []
     });
 
     const fetchDashboardData = useCallback(async () => {
@@ -82,7 +87,10 @@ export default function ToolsPage() {
             ]);
 
             const todayLeads = (leads || []).filter((l: Lead) => l.created_at.startsWith(today));
-            const totalARR = (clients || []).reduce((acc: number, c: BusinessClient) => acc + (Number(c.recurring_profit) || 0), 0);
+            // Only count non-trial clients in financials
+            const paidClients = (clients || []).filter((c: BusinessClient) => !c.is_free_trial);
+            const totalARR = paidClients.reduce((acc: number, c: BusinessClient) => acc + (Number(c.recurring_profit) || 0), 0);
+            const trialClients = (clients || []).filter((c: BusinessClient) => c.is_free_trial && !c.is_trial_converted) as BusinessClient[];
 
             // Separate follow-ups into pending (today/future) and overdue
             const pending = (followUps || []).filter((f: FollowUp) => !isPast(new Date(f.scheduled_date)) || isToday(new Date(f.scheduled_date)));
@@ -99,7 +107,8 @@ export default function ToolsPage() {
                 recentActivity: (activity || []) as ActivityLog[],
                 notifications: (notifications || []) as Notification[],
                 kuberbookLeads: (leads || []).filter((l: Lead) => l.brand === 'Kuberbook').length,
-                solarLeads: (leads || []).filter((l: Lead) => l.brand === 'Solar Vendor').length
+                solarLeads: (leads || []).filter((l: Lead) => l.brand === 'Solar Vendor').length,
+                trialClients
             });
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
@@ -234,6 +243,64 @@ export default function ToolsPage() {
                     </div>
                 </div>
 
+                {/* Announcements & Assignment Tracker */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <AnnouncementBoard />
+                    <CustomerAssignmentTracker />
+                </div>
+
+                {/* Free Trial Clients Alert */}
+                {data.trialClients.length > 0 && (
+                    <div className="card p-6 bg-purple/5 border-purple/20">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-purple flex items-center gap-2">
+                                <Clock className="w-5 h-5" /> Free Trial Clients ({data.trialClients.length})
+                            </h3>
+                            <span className="text-xs text-text-secondary">Follow up to convert to paid</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {data.trialClients.map(client => {
+                                const trialEnd = client.trial_end_date ? new Date(client.trial_end_date) : null;
+                                const isExpired = trialEnd && isPast(trialEnd);
+                                const isEndingSoon = trialEnd && !isExpired && (trialEnd.getTime() - Date.now()) < 7 * 24 * 60 * 60 * 1000;
+                                return (
+                                    <div
+                                        key={client.id}
+                                        className={`p-3 rounded-xl border ${
+                                            isExpired ? 'bg-red-400/5 border-red-400/20' :
+                                            isEndingSoon ? 'bg-yellow/5 border-yellow/20' :
+                                            'bg-background border-border/20'
+                                        }`}
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-bold text-text-primary truncate">{client.name}</p>
+                                                <p className="text-xs text-text-secondary">{client.brand} &middot; {client.trial_months}mo trial</p>
+                                            </div>
+                                            {isExpired && (
+                                                <span className="text-[10px] px-1.5 py-0.5 bg-red-400/10 text-red-400 rounded font-bold flex-shrink-0">EXPIRED</span>
+                                            )}
+                                            {isEndingSoon && !isExpired && (
+                                                <span className="text-[10px] px-1.5 py-0.5 bg-yellow/10 text-yellow rounded font-bold flex-shrink-0">ENDING SOON</span>
+                                            )}
+                                        </div>
+                                        {trialEnd && (
+                                            <p className={`text-xs mt-1.5 ${isExpired ? 'text-red-400' : isEndingSoon ? 'text-yellow' : 'text-text-secondary'}`}>
+                                                {isExpired ? 'Expired' : 'Ends'} {formatDistanceToNow(trialEnd, { addSuffix: true })}
+                                            </p>
+                                        )}
+                                        {client.phone && (
+                                            <a href={`tel:${client.phone}`} className="text-xs text-sky flex items-center gap-1 mt-1 hover:underline">
+                                                <Phone className="w-3 h-3" /> {client.phone}
+                                            </a>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left Column - Follow-ups & Activity */}
@@ -340,8 +407,11 @@ export default function ToolsPage() {
                         </div>
                     </div>
 
-                    {/* Right Column - Quick Access & Activity */}
+                    {/* Right Column - Points, Quick Access & Activity */}
                     <div className="space-y-6">
+                        {/* Employee Points */}
+                        <EmployeePointsCard />
+
                         {/* Brand Quick Access */}
                         <div className="card p-6 space-y-4">
                             <h3 className="font-bold text-text-primary">Quick Access</h3>
