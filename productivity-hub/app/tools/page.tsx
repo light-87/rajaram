@@ -182,7 +182,7 @@ export default function ToolsPage() {
                     {/* Quick Action Buttons */}
                     <div className="flex gap-3">
                         <Link
-                            href="/tools/kuberbook"
+                            href="/tools/solar"
                             className="px-4 py-2 bg-sky text-white rounded-xl font-medium text-sm flex items-center gap-2 hover:bg-sky/90 transition-colors"
                         >
                             <Target className="w-4 h-4" /> Add Lead
