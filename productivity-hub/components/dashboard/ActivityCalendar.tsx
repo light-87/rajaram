@@ -18,7 +18,7 @@ import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 
 interface DayData {
   date: Date;
-  hours: number;
+  spending: number;
   hasJournal: boolean;
   hasTodos: boolean;
 }
@@ -46,13 +46,13 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
       const endDate = format(monthEnd, "yyyy-MM-dd");
 
       // Fetch all data and filter client-side for reliability
-      const [timeResult, journalResult, todosResult] = await Promise.all([
-        supabase.from("time_entries").select("date, hours"),
+      const [expensesResult, journalResult, todosResult] = await Promise.all([
+        supabase.from("personal_expenses").select("date, amount"),
         supabase.from("journal_entries").select("entry_date"),
         supabase.from("todos").select("updated_at, completed").eq("completed", true),
       ]);
 
-      const timeEntries = timeResult.data || [];
+      const expenseEntries = expensesResult.data || [];
       const journalEntries = journalResult.data || [];
       const todos = todosResult.data || [];
 
@@ -65,7 +65,7 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
         const dateKey = format(day, "yyyy-MM-dd");
         dataMap.set(dateKey, {
           date: new Date(day),
-          hours: 0,
+          spending: 0,
           hasJournal: false,
           hasTodos: false,
         });
@@ -89,13 +89,13 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
         return dateStr;
       };
 
-      // Aggregate time entries by date (filter to current month)
-      timeEntries.forEach((entry: any) => {
+      // Aggregate expense entries by date (filter to current month)
+      expenseEntries.forEach((entry: any) => {
         const dateKey = normalizeDate(entry.date);
         if (dateKey >= startDate && dateKey <= endDate) {
           const existing = dataMap.get(dateKey);
           if (existing) {
-            existing.hours += parseFloat(entry.hours || "0");
+            existing.spending += parseFloat(entry.amount || "0");
           }
         }
       });
@@ -130,19 +130,19 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
     }
   };
 
-  const getIntensityClass = (hours: number): string => {
-    if (hours === 0) return "bg-background-elevated";
-    if (hours < 3) return "bg-sky/30";
-    if (hours < 6) return "bg-purple/50";
-    if (hours < 10) return "bg-pink/60";
+  const getIntensityClass = (spending: number): string => {
+    if (spending === 0) return "bg-background-elevated";
+    if (spending < 500) return "bg-sky/30";
+    if (spending < 2000) return "bg-purple/50";
+    if (spending < 5000) return "bg-pink/60";
     return "bg-gradient-to-br from-pink via-purple to-sky";
   };
 
-  const getIntensityBorder = (hours: number): string => {
-    if (hours === 0) return "border-border";
-    if (hours < 3) return "border-sky/40";
-    if (hours < 6) return "border-purple/50";
-    if (hours < 10) return "border-pink/60";
+  const getIntensityBorder = (spending: number): string => {
+    if (spending === 0) return "border-border";
+    if (spending < 500) return "border-sky/40";
+    if (spending < 2000) return "border-purple/50";
+    if (spending < 5000) return "border-pink/60";
     return "border-pink/80";
   };
 
@@ -206,7 +206,7 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
         const dayData = monthData.get(dateKey);
         const isCurrentMonth = isSameMonth(day, monthStart);
         const isToday = isSameDay(day, today);
-        const hours = dayData?.hours || 0;
+        const spending = dayData?.spending || 0;
 
         days.push(
           <div
@@ -217,12 +217,12 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
               className={`
                 w-full h-full rounded-lg border flex items-center justify-center text-sm font-medium
                 transition-all duration-200
-                ${isCurrentMonth ? getIntensityClass(hours) : "bg-background/30"}
-                ${isCurrentMonth ? getIntensityBorder(hours) : "border-transparent"}
+                ${isCurrentMonth ? getIntensityClass(spending) : "bg-background/30"}
+                ${isCurrentMonth ? getIntensityBorder(spending) : "border-transparent"}
                 ${isToday ? "ring-2 ring-yellow" : ""}
                 ${!isCurrentMonth ? "opacity-30" : ""}
               `}
-              title={isCurrentMonth ? `${hours.toFixed(1)} hours` : ""}
+              title={isCurrentMonth && spending > 0 ? `₹${spending.toFixed(0)} spent` : ""}
             >
               <span className={isCurrentMonth ? "text-text-primary" : "text-text-secondary"}>
                 {format(day, "d")}
@@ -257,11 +257,11 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
           <div className="flex items-center gap-3">
             <span className="text-xs text-text-secondary">Less</span>
             <div className="flex gap-1">
-              <div className="w-4 h-4 rounded bg-background-elevated border border-border" title="0 hours" />
-              <div className="w-4 h-4 rounded bg-sky/30 border border-sky/40" title="1-3 hours" />
-              <div className="w-4 h-4 rounded bg-purple/50 border border-purple/50" title="4-6 hours" />
-              <div className="w-4 h-4 rounded bg-pink/60 border border-pink/60" title="7-9 hours" />
-              <div className="w-4 h-4 rounded bg-gradient-to-br from-pink via-purple to-sky border border-pink/80" title="10+ hours" />
+              <div className="w-4 h-4 rounded bg-background-elevated border border-border" title="₹0" />
+              <div className="w-4 h-4 rounded bg-sky/30 border border-sky/40" title="Under ₹500" />
+              <div className="w-4 h-4 rounded bg-purple/50 border border-purple/50" title="₹500-2k" />
+              <div className="w-4 h-4 rounded bg-pink/60 border border-pink/60" title="₹2k-5k" />
+              <div className="w-4 h-4 rounded bg-gradient-to-br from-pink via-purple to-sky border border-pink/80" title="₹5k+" />
             </div>
             <span className="text-xs text-text-secondary">More</span>
           </div>
