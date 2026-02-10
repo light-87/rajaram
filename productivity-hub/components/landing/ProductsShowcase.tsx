@@ -5,21 +5,21 @@ import Link from "next/link";
 const products = [
     {
         num: "01",
+        name: "Solar Sales Manager",
+        tagline: "For solar installers",
+        description: "Track every installation through 15 steps — from first document to final payment. Automatic government document generation, finance customers, cash deals, MSEB inspections — all in one place.",
+        href: "/products/solar",
+        external: false,
+        doodle: "☀️",
+    },
+    {
+        num: "02",
         name: "Kuberbook",
         tagline: "For service vendors",
         description: "Water purifier techs, AC service, appliance dealers — automatic reminders, digital bills, WhatsApp messages. Never lose a customer to forgotten maintenance.",
         href: "https://kuberbook.shop",
         external: true,
         doodle: "💧",
-    },
-    {
-        num: "02",
-        name: "Solar Sales Manager",
-        tagline: "For solar installers",
-        description: "Track every installation through 15 steps — from first document to final payment. Finance customers, cash deals, MSEB inspections — all in one place.",
-        href: "/products/solar",
-        external: false,
-        doodle: "☀️",
     },
     {
         num: "03",

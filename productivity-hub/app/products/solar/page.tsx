@@ -74,6 +74,10 @@ export default function SolarProductPage() {
                             { title: "Real-time Dashboard", desc: "All projects at a glance" },
                             { title: "Role-based Access", desc: "Admin and employee levels" },
                             { title: "Mobile Ready", desc: "Update from anywhere" },
+                            { title: "Auto Document Generation", desc: "Government forms and applications generated automatically" },
+                            { title: "MSEB Integration", desc: "Inspection scheduling and meter tracking" },
+                            { title: "Bank Coordination", desc: "Disbursement tracking and bank communication" },
+                            { title: "Customer Portal", desc: "Customers can track their installation progress" },
                         ].map((feature) => (
                             <div key={feature.title}>
                                 <h3 className="text-text-primary font-medium mb-2">
