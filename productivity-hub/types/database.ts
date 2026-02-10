@@ -177,6 +177,24 @@ export interface Lead {
   updated_at: string;
 }
 
+export interface VendorProspect {
+  id: string;
+  state: string;
+  district: string;
+  company_name: string;
+  brand_name?: string;
+  contact_person?: string;
+  email?: string;
+  phone?: string;
+  installations: number;
+  capacity_kwp: number;
+  is_imported: boolean;
+  imported_at?: string;
+  imported_by?: string;
+  scraped_at?: string;
+  created_at: string;
+}
+
 export interface BusinessClient {
   id: string;
   brand: ProductBrand;

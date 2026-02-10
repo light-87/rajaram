@@ -19,7 +19,8 @@ import {
     AlertCircle,
     CheckCircle2,
     ChevronRight,
-    Activity
+    Activity,
+    Upload
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
@@ -266,11 +267,10 @@ export default function ToolsPage() {
                                 return (
                                     <div
                                         key={client.id}
-                                        className={`p-3 rounded-xl border ${
-                                            isExpired ? 'bg-red-400/5 border-red-400/20' :
-                                            isEndingSoon ? 'bg-yellow/5 border-yellow/20' :
-                                            'bg-background border-border/20'
-                                        }`}
+                                        className={`p-3 rounded-xl border ${isExpired ? 'bg-red-400/5 border-red-400/20' :
+                                                isEndingSoon ? 'bg-yellow/5 border-yellow/20' :
+                                                    'bg-background border-border/20'
+                                            }`}
                                     >
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="min-w-0">
@@ -466,6 +466,11 @@ export default function ToolsPage() {
                                 <Link href="/tools/payments" className="flex items-center gap-3 p-3 hover:bg-border/10 rounded-xl transition-colors">
                                     <TrendingUp className="w-5 h-5 text-pink" />
                                     <span className="text-sm text-text-primary">Payments</span>
+                                </Link>
+
+                                <Link href="/tools/admin/vendor-data" className="flex items-center gap-3 p-3 hover:bg-border/10 rounded-xl transition-colors">
+                                    <Upload className="w-5 h-5 text-green" />
+                                    <span className="text-sm text-text-primary">Vendor Data</span>
                                 </Link>
                             </div>
                         )}

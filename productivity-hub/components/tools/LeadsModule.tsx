@@ -6,6 +6,7 @@ import Modal from "@/components/ui/Modal";
 import { showToast } from "@/components/ui/Toast";
 import { supabase } from "@/lib/supabase";
 import { Lead, LeadStatus, ProductBrand, Profile, SalesAgent, FollowUp, FollowUpType, FollowUpStatus } from "@/types/database";
+import VendorProspectsPanel from "@/components/tools/VendorProspectsPanel";
 import {
     Plus,
     Search,
@@ -21,7 +22,8 @@ import {
     Copy,
     CheckCircle2,
     MessageSquare,
-    Trash2
+    Trash2,
+    Database
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
@@ -42,6 +44,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
     const [searchQuery, setSearchQuery] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isProspectsOpen, setIsProspectsOpen] = useState(false);
 
     // New Lead Form State
     const [newLead, setNewLead] = useState({
@@ -474,13 +477,24 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                     <h2 className="text-2xl font-bold text-text-primary">{brand} Leads</h2>
                 </div>
 
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className={`flex items-center gap-2 px-4 py-2 text-white rounded-xl transition-all shadow-lg ${brand === 'Kuberbook' ? 'bg-sky hover:bg-sky/90' : 'bg-yellow hover:bg-yellow/90 font-bold'}`}
-                >
-                    <Plus className="w-5 h-5" />
-                    Add New Lead
-                </button>
+                <div className="flex gap-2">
+                    {brand === 'Solar Vendor' && (
+                        <button
+                            onClick={() => setIsProspectsOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-green/10 text-green border border-green/30 rounded-xl transition-all hover:bg-green/20 font-bold"
+                        >
+                            <Database className="w-5 h-5" />
+                            Vendor Prospects
+                        </button>
+                    )}
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className={`flex items-center gap-2 px-4 py-2 text-white rounded-xl transition-all shadow-lg ${brand === 'Kuberbook' ? 'bg-sky hover:bg-sky/90' : 'bg-yellow hover:bg-yellow/90 font-bold'}`}
+                    >
+                        <Plus className="w-5 h-5" />
+                        Add New Lead
+                    </button>
+                </div>
             </div>
 
             {/* Filters & Search */}
@@ -1007,6 +1021,18 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                     </div>
                 </form>
             </Modal>
+
+            {/* Vendor Prospects Panel */}
+            {brand === 'Solar Vendor' && (
+                <VendorProspectsPanel
+                    isOpen={isProspectsOpen}
+                    onClose={() => setIsProspectsOpen(false)}
+                    brand={brand}
+                    employeeId={employee?.id}
+                    employeeUsername={employee?.username}
+                    onImported={() => fetchLeads()}
+                />
+            )}
         </div>
     );
 }
