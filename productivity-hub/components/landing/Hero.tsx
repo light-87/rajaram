@@ -57,7 +57,7 @@ export default function Hero() {
             </svg>
 
             {/* Navigation */}
-            <nav className="relative z-10 flex items-center justify-between px-6 lg:px-12 py-6">
+            <nav className="relative z-20 flex items-center justify-between px-6 lg:px-12 py-6">
                 <Link href="/" className="flex items-center gap-2">
                     <span className="font-handwritten text-2xl text-ink">
                         Rajaram & Pallavi
