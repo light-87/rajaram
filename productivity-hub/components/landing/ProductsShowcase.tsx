@@ -8,8 +8,8 @@ const products = [
         name: "Solar Sales Manager",
         tagline: "For solar installers",
         description: "Track every installation through 15 steps — from first document to final payment. Automatic government document generation, finance customers, cash deals, MSEB inspections — all in one place.",
-        href: "/products/solar",
-        external: false,
+        href: "http://saundaryaroof.homes/",
+        external: true,
         doodle: "☀️",
     },
     {

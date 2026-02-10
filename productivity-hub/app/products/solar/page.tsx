@@ -62,28 +62,26 @@ export default function SolarProductPage() {
                 </div>
             </section>
 
-            {/* Features */}
+            {/* 5 Things This App Does */}
             <section className="px-6 lg:px-12 py-16 border-b border-border">
-                <div className="max-w-5xl">
-                    <p className="text-sm text-text-secondary tracking-widest uppercase mb-8">
-                        Capabilities
+                <div className="max-w-4xl">
+                    <p className="text-sm text-text-secondary tracking-widest uppercase mb-4">
+                        Why Solar Sales Manager?
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <h2 className="text-2xl font-light text-text-primary mb-12">
+                        5 things this app does for you
+                    </h2>
+                    <div className="space-y-6">
                         {[
-                            { title: "Finance & Cash", desc: "Both payment types supported" },
-                            { title: "Real-time Dashboard", desc: "All projects at a glance" },
-                            { title: "Role-based Access", desc: "Admin and employee levels" },
-                            { title: "Mobile Ready", desc: "Update from anywhere" },
-                            { title: "Auto Document Generation", desc: "Government forms and applications generated automatically" },
-                            { title: "MSEB Integration", desc: "Inspection scheduling and meter tracking" },
-                            { title: "Bank Coordination", desc: "Disbursement tracking and bank communication" },
-                            { title: "Customer Portal", desc: "Customers can track their installation progress" },
-                        ].map((feature) => (
-                            <div key={feature.title}>
-                                <h3 className="text-text-primary font-medium mb-2">
-                                    {feature.title}
-                                </h3>
-                                <p className="text-text-secondary text-sm">{feature.desc}</p>
+                            { num: 1, text: "All customers in one place — 15 step lifecycle tracking" },
+                            { num: 2, text: "5 government documents generated in 30 seconds — no manual typing" },
+                            { num: 3, text: "Panel & Inverter warranty tracking for 20+ years" },
+                            { num: 4, text: "Works on phone & computer — no app download needed" },
+                            { num: 5, text: "All data stored safely in cloud — never lost" },
+                        ].map((item) => (
+                            <div key={item.num} className="flex items-baseline gap-4 py-3 border-b border-border">
+                                <span className="text-lg font-medium text-text-primary w-8">{item.num}.</span>
+                                <p className="text-text-secondary text-lg font-light">{item.text}</p>
                             </div>
                         ))}
                     </div>
