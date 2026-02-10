@@ -173,6 +173,7 @@ export interface Lead {
   google_maps_link?: string;
   next_follow_up?: string;
   follow_up_notes?: string;
+  vendor_prospect_id?: string;
   created_at: string;
   updated_at: string;
 }

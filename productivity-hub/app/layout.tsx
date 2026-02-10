@@ -2,16 +2,15 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import { ToastProvider } from "@/components/ui/Toast";
-import AuthGuard from "@/components/AuthGuard";
 
 export const metadata: Metadata = {
-  title: "Vaibhav Life Tracker",
-  description: "Track your finances, time, clients, and daily reflections",
+  title: "Rajaram & Pallavi - Software for Local Businesses",
+  description: "We build automation software for local business owners. Kuberbook, Solar Sales Manager, and custom factory solutions.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Vaibhav Life Tracker",
+    title: "Rajaram & Pallavi",
   },
 };
 
@@ -29,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="font-sans">
+    <html lang="en" suppressHydrationWarning>
+      <body className="font-sans" suppressHydrationWarning>
         <AuthProvider>
           <ToastProvider>
             {children}

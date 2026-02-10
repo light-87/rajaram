@@ -11,7 +11,19 @@ export async function GET(request: NextRequest) {
         const maxInstallations = searchParams.get("maxInstallations");
         const page = parseInt(searchParams.get("page") || "1");
         const limit = parseInt(searchParams.get("limit") || "50");
+        const sort = searchParams.get("sort") || "installations_desc";
         const offset = (page - 1) * limit;
+
+        // Map sort parameter to SQL
+        const sortMap: Record<string, string> = {
+            installations_desc: "installations DESC",
+            installations_asc: "installations ASC",
+            capacity_desc: "capacity_kwp DESC",
+            capacity_asc: "capacity_kwp ASC",
+            company_asc: "company_name ASC",
+            company_desc: "company_name DESC",
+        };
+        const orderBy = sortMap[sort] || "installations DESC";
 
         // Build dynamic WHERE clause
         const conditions: string[] = ["is_imported = false", "state = $1"];
@@ -53,7 +65,7 @@ export async function GET(request: NextRequest) {
 
         // Get paginated data
         const dataResult = await sql.query(
-            `SELECT * FROM vendor_prospects ${whereClause} ORDER BY installations DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+            `SELECT * FROM vendor_prospects ${whereClause} ORDER BY ${orderBy} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
             [...params, limit, offset]
         );
 

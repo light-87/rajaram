@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
                 status: "new",
                 created_by: employeeId,
                 notes,
+                vendor_prospect_id: vendorId,
             })
             .select()
             .single();

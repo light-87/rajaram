@@ -420,6 +420,19 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
 
             if (error) throw error;
 
+            // Un-mark vendor prospect if this lead was imported from one
+            if (lead.vendor_prospect_id) {
+                try {
+                    await fetch("/api/vendor-prospects/unmark", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ vendorId: lead.vendor_prospect_id }),
+                    });
+                } catch {
+                    // Non-critical — vendor just stays marked
+                }
+            }
+
             await logActivity(
                 "Lead Deleted",
                 `Lead "${lead.customer_name}" was deleted`,

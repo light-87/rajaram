@@ -8,7 +8,14 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        handwritten: ['"Comic Sans MS"', '"Segoe Print"', '"Bradley Hand"', 'cursive'],
+      },
       colors: {
+        // Paper/notebook aesthetic
+        paper: "#faf8f5",
+        ink: "#2d2926",
+        // Original dark theme colors (kept for other pages)
         background: {
           DEFAULT: "#0F0A1A",
           card: "#1A1425",
@@ -82,6 +89,7 @@ const config: Config = {
         "glow-sky": "0 0 25px -5px rgba(56, 189, 248, 0.5)",
         "glow-yellow": "0 0 25px -5px rgba(250, 204, 21, 0.5)",
         "glow-green": "0 0 25px -5px rgba(34, 197, 94, 0.5)",
+        sketch: "3px 3px 0 rgba(45, 41, 38, 0.1)",
       },
       animation: {
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
