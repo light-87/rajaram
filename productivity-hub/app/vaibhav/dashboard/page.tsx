@@ -123,6 +123,7 @@ export default function DashboardPage() {
     upcomingRecurring: [],
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -130,6 +131,8 @@ export default function DashboardPage() {
   }, []);
 
   const fetchDashboardData = async () => {
+    setHasError(false);
+    setIsLoading(true);
     try {
       const [loanData, financeData, todosData, journalData, clientsData] = await Promise.all([
         fetchLoanData(),
@@ -148,6 +151,7 @@ export default function DashboardPage() {
       });
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+      setHasError(true);
     } finally {
       setIsLoading(false);
     }
@@ -273,16 +277,19 @@ export default function DashboardPage() {
       const todayMood = todayEntry?.mood ? Number(todayEntry.mood) : null;
       const todayEnergy = todayEntry?.energy ? Number(todayEntry.energy) : null;
 
-      const weeklyMood: number[] = [];
-      for (let i = 0; i < 7; i++) {
+      const weekStart = format(startOfThisWeek, "yyyy-MM-dd");
+      const weekEnd = format(addDays(startOfThisWeek, 6), "yyyy-MM-dd");
+      const { data: weekEntries } = await supabase
+        .from("journal_entries")
+        .select("entry_date, mood")
+        .gte("entry_date", weekStart)
+        .lte("entry_date", weekEnd);
+
+      const weeklyMood: number[] = Array.from({ length: 7 }, (_, i) => {
         const date = format(addDays(startOfThisWeek, i), "yyyy-MM-dd");
-        const { data: dayEntry } = await supabase
-          .from("journal_entries")
-          .select("mood")
-          .eq("entry_date", date)
-          .single();
-        weeklyMood.push(dayEntry?.mood ? Number(dayEntry.mood) : 0);
-      }
+        const entry = weekEntries?.find((e) => e.entry_date === date);
+        return entry?.mood ? Number(entry.mood) : 0;
+      });
 
       const { data: allEntries } = await supabase
         .from("journal_entries")
@@ -387,6 +394,23 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
         <Loading text="Loading your dashboard..." />
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] gap-4 px-4">
+        <AlertCircle className="w-8 h-8 text-text-secondary" />
+        <p className="text-text-secondary text-sm text-center">
+          Failed to load dashboard. Check your connection and try again.
+        </p>
+        <button
+          onClick={fetchDashboardData}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-background text-sm font-medium"
+        >
+          <RefreshCw className="w-4 h-4" /> Try Again
+        </button>
       </div>
     );
   }

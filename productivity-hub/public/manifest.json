@@ -2,7 +2,7 @@
   "name": "Vaibhav Life Tracker",
   "short_name": "Vaibhav Vault",
   "description": "Track your finances, time, clients, and daily reflections",
-  "start_url": "/",
+  "start_url": "/tools",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",

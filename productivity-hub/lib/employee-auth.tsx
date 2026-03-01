@@ -61,7 +61,11 @@ export function EmployeeAuthProvider({ children }: { children: ReactNode }) {
     };
 
     if (isLoading) {
-        return null; // Or a loading spinner
+        return (
+            <div className="fixed inset-0 flex items-center justify-center bg-background">
+                <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
     }
 
     return (

@@ -45,11 +45,10 @@ export default function ActivityCalendar({ className = "" }: ActivityCalendarPro
       const startDate = format(monthStart, "yyyy-MM-dd");
       const endDate = format(monthEnd, "yyyy-MM-dd");
 
-      // Fetch all data and filter client-side for reliability
       const [expensesResult, journalResult, todosResult] = await Promise.all([
-        supabase.from("personal_expenses").select("date, amount"),
-        supabase.from("journal_entries").select("entry_date"),
-        supabase.from("todos").select("updated_at, completed").eq("completed", true),
+        supabase.from("personal_expenses").select("date, amount").gte("date", startDate).lte("date", endDate),
+        supabase.from("journal_entries").select("entry_date").gte("entry_date", startDate).lte("entry_date", endDate),
+        supabase.from("todos").select("updated_at, completed").eq("completed", true).gte("updated_at", startDate).lte("updated_at", endDate),
       ]);
 
       const expenseEntries = expensesResult.data || [];
