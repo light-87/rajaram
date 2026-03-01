@@ -135,7 +135,7 @@ export interface Note {
 
 export type UserRole = 'admin' | 'employee';
 export type ProductBrand = 'Kuberbook' | 'Solar Vendor';
-export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'converted' | 'lost';
+export type LeadStatus = 'new' | 'contacted' | 'follow_up' | 'qualified' | 'converted' | 'lost';
 export type LeadPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type FollowUpType = 'call' | 'email' | 'meeting' | 'visit' | 'whatsapp';
 export type FollowUpStatus = 'pending' | 'completed' | 'cancelled' | 'rescheduled';
