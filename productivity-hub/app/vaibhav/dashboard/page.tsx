@@ -135,11 +135,11 @@ export default function DashboardPage() {
     setIsLoading(true);
     try {
       const [loanData, financeData, todosData, journalData, clientsData] = await Promise.all([
-        fetchLoanData(),
-        fetchFinanceData(),
-        fetchTodosData(),
-        fetchJournalData(),
-        fetchClientsData(),
+        fetchLoanData().catch(() => ({ loan: null, freedomPercentage: 0, dailyInterest: 0, monthsToFreedom: 0 })),
+        fetchFinanceData().catch(() => ({ thisMonthIncome: 0, thisMonthExpenses: 0, monthlyRecurring: 0, upcomingRecurring: [] })),
+        fetchTodosData().catch(() => ({ activeTodos: 0, overdueTodos: [], todayTodos: [] })),
+        fetchJournalData().catch(() => ({ todayMood: null, todayEnergy: null, weeklyMood: [], journalStreak: 0 })),
+        fetchClientsData().catch(() => ({ totalARR: 0, revenueDueToday: 0, upcomingPayments: [], activeClients: 0 })),
       ]);
 
       setData({
@@ -209,11 +209,17 @@ export default function DashboardPage() {
       const recurring = (recurringRes.data || []).map((d: any) => ({ ...d, amount: parseFloat(d.amount) }));
 
       const thisMonthIncome = allIncome
-        .filter((e: any) => e.date.startsWith(currentMonth))
+        .filter((e: any) => {
+          const d = e.date instanceof Date ? e.date.toISOString().split('T')[0] : String(e.date);
+          return d.startsWith(currentMonth);
+        })
         .reduce((sum: number, e: any) => sum + e.amount, 0);
 
       const thisMonthExpenses = allExpenses
-        .filter((e: any) => e.date.startsWith(currentMonth))
+        .filter((e: any) => {
+          const d = e.date instanceof Date ? e.date.toISOString().split('T')[0] : String(e.date);
+          return d.startsWith(currentMonth);
+        })
         .reduce((sum: number, e: any) => sum + e.amount, 0);
 
       const monthlyRecurring = recurring.reduce((sum: number, r: any) => {
@@ -264,6 +270,12 @@ export default function DashboardPage() {
   };
 
   const fetchJournalData = async () => {
+    const normalizeDate = (d: unknown): string => {
+      if (d instanceof Date) return d.toISOString().split('T')[0];
+      if (typeof d === 'string' && d.includes('T')) return d.split('T')[0];
+      return d as string;
+    };
+
     try {
       const today = format(new Date(), "yyyy-MM-dd");
       const startOfThisWeek = startOfWeek(new Date(), { weekStartsOn: 0 });
@@ -287,7 +299,7 @@ export default function DashboardPage() {
 
       const weeklyMood: number[] = Array.from({ length: 7 }, (_, i) => {
         const date = format(addDays(startOfThisWeek, i), "yyyy-MM-dd");
-        const entry = weekEntries?.find((e: { entry_date: string; mood: number | null }) => e.entry_date === date);
+        const entry = weekEntries?.find((e: { entry_date: string | Date; mood: number | null }) => normalizeDate(e.entry_date) === date);
         return entry?.mood ? Number(entry.mood) : 0;
       });
 
@@ -300,7 +312,7 @@ export default function DashboardPage() {
       if (allEntries && allEntries.length > 0) {
         let currentDate = new Date();
         for (const entry of allEntries) {
-          const entryDate = parseISO(entry.entry_date);
+          const entryDate = parseISO(normalizeDate(entry.entry_date));
           const daysDiff = differenceInDays(currentDate, entryDate);
           if (daysDiff === journalStreak) {
             journalStreak++;
