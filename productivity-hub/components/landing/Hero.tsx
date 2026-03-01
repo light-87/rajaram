@@ -1,14 +1,95 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useRef, useEffect } from "react";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+
+// --- Magnetic Component ---
+function Magnetic({ children }: { children: React.ReactNode }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const x = useMotionValue(0);
+    const y = useMotionValue(0);
+
+    const springConfig = { damping: 15, stiffness: 150 };
+    const mouseX = useSpring(x, springConfig);
+    const mouseY = useSpring(y, springConfig);
+
+    function handleMouseMove(e: React.MouseEvent) {
+        if (!ref.current) return;
+        const { clientX, clientY } = e;
+        const { width, height, left, top } = ref.current.getBoundingClientRect();
+        const middleX = clientX - (left + width / 2);
+        const middleY = clientY - (top + height / 2);
+        x.set(middleX * 0.35);
+        y.set(middleY * 0.35);
+    }
+
+    function handleMouseLeave() {
+        x.set(0);
+        y.set(0);
+    }
+
+    return (
+        <motion.div
+            ref={ref}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            style={{ x: mouseX, y: mouseY }}
+        >
+            {children}
+        </motion.div>
+    );
+}
+
+// --- Particles Background ---
+function Particles() {
+    const [particles, setParticles] = useState<{ id: number; x: number; y: number; size: number; duration: number }[]>([]);
+
+    useEffect(() => {
+        const newParticles = Array.from({ length: 30 }).map((_, i) => ({
+            id: i,
+            x: Math.random() * 100,
+            y: Math.random() * 100,
+            size: Math.random() * 10 + 5,
+            duration: Math.random() * 20 + 10,
+        }));
+        setParticles(newParticles);
+    }, []);
+
+    return (
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
+            {particles.map((p) => (
+                <motion.div
+                    key={p.id}
+                    className="absolute bg-ink rounded-full"
+                    style={{
+                        width: p.size,
+                        height: p.size,
+                        left: `${p.x}%`,
+                        top: `${p.y}%`,
+                    }}
+                    animate={{
+                        x: [0, Math.random() * 200 - 100, 0],
+                        y: [0, Math.random() * 200 - 100, 0],
+                        rotate: [0, 360],
+                        opacity: [0.2, 0.5, 0.2],
+                    }}
+                    transition={{
+                        duration: p.duration,
+                        repeat: Infinity,
+                        ease: "linear",
+                    }}
+                />
+            ))}
+        </div>
+    );
+}
 
 export default function Hero() {
     const [loginOpen, setLoginOpen] = useState(false);
 
     return (
-        <section className="relative min-h-screen bg-paper">
+        <section className="relative min-h-screen bg-paper overflow-hidden">
             {/* Paper texture overlay */}
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1IiBoZWlnaHQ9IjUiPgo8cmVjdCB3aWR0aD0iNSIgaGVpZ2h0PSI1IiBmaWxsPSIjZmZmZmZmIj48L3JlY3Q+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNmOGY4ZjgiPjwvcmVjdD4KPC9zdmc+')] opacity-50" />
 
@@ -17,6 +98,8 @@ export default function Hero() {
                 backgroundImage: 'repeating-linear-gradient(transparent, transparent 31px, #e8e4df 31px, #e8e4df 32px)',
                 backgroundPosition: '0 80px'
             }} />
+
+            <Particles />
 
             {/* Colorful doodle shapes in background */}
             {/* Orange circle - top left */}
@@ -112,12 +195,14 @@ export default function Hero() {
 
                     {/* Login Button - Sketchy style */}
                     <div className="relative">
-                        <button
-                            onClick={() => setLoginOpen(!loginOpen)}
-                            className="font-handwritten px-5 py-2 text-ink border-2 border-ink rounded-[255px_15px_225px_15px/15px_225px_15px_255px] hover:bg-ink/5 transition-colors"
-                        >
-                            Login
-                        </button>
+                        <Magnetic>
+                            <button
+                                onClick={() => setLoginOpen(!loginOpen)}
+                                className="font-handwritten px-5 py-2 text-ink border-2 border-ink rounded-[255px_15px_225px_15px/15px_225px_15px_255px] hover:bg-ink/5 transition-colors"
+                            >
+                                Login
+                            </button>
+                        </Magnetic>
                         {loginOpen && (
                             <>
                                 <div className="fixed inset-0 z-40" onClick={() => setLoginOpen(false)} />
@@ -204,18 +289,22 @@ export default function Hero() {
                         transition={{ delay: 1 }}
                         className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8"
                     >
-                        <Link
-                            href="#products"
-                            className="font-handwritten px-8 py-3 bg-ink text-paper rounded-[255px_15px_225px_15px/15px_225px_15px_255px] hover:bg-ink/90 hover:scale-105 transition-all"
-                        >
-                            View My Work →
-                        </Link>
-                        <Link
-                            href="#contact"
-                            className="font-handwritten px-8 py-3 text-ink border-2 border-ink rounded-[15px_255px_15px_225px/225px_15px_255px_15px] hover:bg-ink/5 hover:scale-105 transition-all"
-                        >
-                            Get in Touch
-                        </Link>
+                        <Magnetic>
+                            <Link
+                                href="#products"
+                                className="font-handwritten px-8 py-3 bg-ink text-paper rounded-[255px_15px_225px_15px/15px_225px_15px_255px] hover:bg-ink/90 hover:scale-105 transition-all inline-block"
+                            >
+                                View My Work →
+                            </Link>
+                        </Magnetic>
+                        <Magnetic>
+                            <Link
+                                href="#contact"
+                                className="font-handwritten px-8 py-3 text-ink border-2 border-ink rounded-[15px_255px_15px_225px/225px_15px_255px_15px] hover:bg-ink/5 hover:scale-105 transition-all inline-block"
+                            >
+                                Get in Touch
+                            </Link>
+                        </Magnetic>
                     </motion.div>
                 </motion.div>
 
