@@ -87,7 +87,10 @@ export default function ToolsPage() {
                     : { data: [] }
             ]);
 
-            const todayLeads = (leads || []).filter((l: Lead) => l.created_at.startsWith(today));
+            const todayLeads = (leads || []).filter((l: Lead) => {
+                const d = l.created_at instanceof Date ? l.created_at.toISOString().split('T')[0] : String(l.created_at);
+                return d.startsWith(today);
+            });
             // Only count non-trial clients in financials
             const paidClients = (clients || []).filter((c: BusinessClient) => !c.is_free_trial);
             const totalARR = paidClients.reduce((acc: number, c: BusinessClient) => acc + (Number(c.recurring_profit) || 0), 0);
