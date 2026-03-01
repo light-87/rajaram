@@ -287,7 +287,7 @@ export default function DashboardPage() {
 
       const weeklyMood: number[] = Array.from({ length: 7 }, (_, i) => {
         const date = format(addDays(startOfThisWeek, i), "yyyy-MM-dd");
-        const entry = weekEntries?.find((e) => e.entry_date === date);
+        const entry = weekEntries?.find((e: { entry_date: string; mood: number | null }) => e.entry_date === date);
         return entry?.mood ? Number(entry.mood) : 0;
       });
 
