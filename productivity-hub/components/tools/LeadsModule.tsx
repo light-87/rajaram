@@ -31,34 +31,34 @@ import { geocodeAddress, logActivity } from "@/lib/tools-utils";
 import { useEmployeeAuth } from "@/lib/employee-auth";
 
 // WhatsApp message templates for Solar Vendor leads
-const WHATSAPP_FIRST_MESSAGE = `Namaskar ji! 🙏
+const WHATSAPP_FIRST_MESSAGE = `Namaskar ji!
 
 Mi Vaibhav, aatach aapli phone var baat zali hoti.
-He gha Solar Sales Manager cha 5-minute demo video 👇
+He gha Solar Sales Manager cha 5-minute demo video
 
 https://youtu.be/HIQxoJecSe4
 
 Yaat kaay aahe:
-✅ 16-step customer tracking -- ek pan step miss honar nahi
-✅ 5 government documents (Completion File, Net Agreement, Commissioning Report, etc.) -- ek bu
-✅ PM Surya Ghar portal cha poora pipeline tracking
-✅ Disbursement dashboard -- paisa kuthe aadla aahe, ek nazaret
-✅ WhatsApp varun customer la status update
-✅ Admin aur Employee roles -- data surakshit rahto
+- 16-step customer tracking -- ek pan step miss honar nahi
+- 5 government documents (Completion File, Net Agreement, Commissioning Report, etc.) -- ek bu
+- PM Surya Ghar portal cha poora pipeline tracking
+- Disbursement dashboard -- paisa kuthe aadla aahe, ek nazaret
+- WhatsApp varun customer la status update
+- Admin aur Employee roles -- data surakshit rahto
 
-📱 Phone var pan chalto, computer var pan. Kahi app download karayla nako.
+Phone var pan chalto, computer var pan. Kahi app download karayla nako.
 
-💬 Shri Balaji Industries (Pune) January pasun vaprat aahet -- 100+ customers manage kele aahet
-👉 Tyanchyashi baat karaychi asel tar number: 9049496040
+Shri Balaji Industries (Pune) January pasun vaprat aahet -- 100+ customers manage kele aahet
+Tyanchyashi baat karaychi asel tar number: 9049496040
 
 Video bagha, 5 minute lagtil.
 Interest asel tar Vaibhav tumhala personally call karun live demo
 
 Kahi pan prashna asel tar ithe message kara!`;
 
-const WHATSAPP_FOLLOW_UP_MESSAGE = `Namaskar! 🙏
+const WHATSAPP_FOLLOW_UP_MESSAGE = `Namaskar!
 Kahi diwasanpurvi Solar Sales Manager cha demo video pathavla hota. Baghu shakla ka?
-Fakta 7 minute cha aahe -- ek da nakki bagha 👇
+Fakta 7 minute cha aahe -- ek da nakki bagha
 https://youtu.be/HIQxoJecSe4
 
 Already 2 solar vendors vaprat aahet. Shri Balaji Industries ne 100+ customers manage kele aahet
