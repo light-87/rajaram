@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 const products = [
     {
@@ -14,6 +15,15 @@ const products = [
     },
     {
         num: "02",
+        name: "BaahiAI",
+        tagline: "India's smartest voice-driven expense tracker",
+        description: "Zero typing required. Speak in 11 Indian languages to log deliveries and payments instantly. Uses AI compound queries to update everything seamlessly.",
+        href: "https://baahi.work",
+        external: true,
+        doodle: "🎙️",
+    },
+    {
+        num: "03",
         name: "Kuberbook",
         tagline: "For service vendors",
         description: "Water purifier techs, AC service, appliance dealers — automatic reminders, digital bills, WhatsApp messages. Never lose a customer to forgotten maintenance.",
@@ -22,10 +32,10 @@ const products = [
         doodle: "💧",
     },
     {
-        num: "03",
-        name: "Custom Factory Systems",
-        tagline: "For factory owners",
-        description: "Got inventory chaos? Production tracking nightmares? We build complete systems tailored to how YOUR factory works. Multi-warehouse, reports, backups — everything.",
+        num: "04",
+        name: "PMR ERP System",
+        tagline: "Enterprise resource planning",
+        description: "Built for PMR Industries managing multi-warehouse inventory (3 warehouses), production workflows, financial tracking with 5 account types, and automated Google Drive backups.",
         href: "#contact",
         external: false,
         doodle: "🏭",
@@ -70,62 +80,75 @@ export default function ProductsShowcase() {
 
             <div className="relative z-10 max-w-4xl mx-auto">
                 {/* Section header with hand-drawn box */}
-                <div className="mb-16 text-center">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.6 }}
+                    className="mb-16 text-center"
+                >
                     <div className="inline-block bg-blue-100/50 px-6 py-2 rounded-[255px_15px_225px_15px/15px_225px_15px_255px] mb-4">
-                        <span className="font-handwritten text-ink/60">what we build</span>
+                        <span className="font-handwritten text-ink/60">my work</span>
                     </div>
                     <h2 className="font-handwritten text-4xl sm:text-5xl text-ink">
-                        Our Products
+                        Featured Projects
                     </h2>
-                </div>
+                </motion.div>
 
                 {/* Products as notebook entries */}
                 <div className="space-y-12">
-                    {products.map((product) => (
-                        <Link
+                    {products.map((product, idx) => (
+                        <motion.div
+                            initial={{ opacity: 0, x: idx % 2 === 0 ? -50 : 50 }}
+                            whileInView={{ opacity: 1, x: 0 }}
+                            viewport={{ once: true, margin: "-100px" }}
+                            transition={{ duration: 0.8, delay: idx * 0.1, type: "spring", bounce: 0.3 }}
                             key={product.name}
-                            href={product.href}
-                            target={product.external ? "_blank" : undefined}
-                            rel={product.external ? "noopener noreferrer" : undefined}
-                            className="group block"
                         >
-                            <div className="relative p-6 sm:p-8 bg-paper border-2 border-ink/20 rounded-[10px_25px_15px_20px/20px_10px_25px_15px] hover:border-ink/40 hover:shadow-sketch transition-all hover:rotate-[0.3deg]">
-                                {/* Number in margin */}
-                                <span className="absolute -left-4 top-6 font-handwritten text-2xl text-ink/30">
-                                    {product.num}
-                                </span>
+                            <Link
+                                href={product.href}
+                                target={product.external ? "_blank" : undefined}
+                                rel={product.external ? "noopener noreferrer" : undefined}
+                                className="group block"
+                            >
+                                <div className="relative p-6 sm:p-8 bg-paper border-2 border-ink/20 rounded-[10px_25px_15px_20px/20px_10px_25px_15px] hover:border-ink/40 hover:shadow-sketch transition-all hover:rotate-[0.3deg]">
+                                    {/* Number in margin */}
+                                    <span className="absolute -left-4 top-6 font-handwritten text-2xl text-ink/30">
+                                        {product.num}
+                                    </span>
 
-                                {/* Doodle */}
-                                <span className="absolute -right-2 -top-2 text-3xl">
-                                    {product.doodle}
-                                </span>
+                                    {/* Doodle */}
+                                    <span className="absolute -right-2 -top-2 text-3xl">
+                                        {product.doodle}
+                                    </span>
 
-                                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-                                    <div className="flex-1">
-                                        <div className="flex items-baseline gap-3 mb-2">
-                                            <h3 className="font-handwritten text-2xl text-ink group-hover:text-orange-600 transition-colors">
-                                                {product.name}
-                                            </h3>
-                                            <span className="font-handwritten text-ink/50 text-sm">
-                                                ({product.tagline})
-                                            </span>
-                                            {product.external && (
-                                                <span className="font-handwritten text-ink/40 text-sm">↗</span>
-                                            )}
+                                    <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                                        <div className="flex-1">
+                                            <div className="flex items-baseline gap-3 mb-2">
+                                                <h3 className="font-handwritten text-2xl text-ink group-hover:text-orange-600 transition-colors">
+                                                    {product.name}
+                                                </h3>
+                                                <span className="font-handwritten text-ink/50 text-sm">
+                                                    ({product.tagline})
+                                                </span>
+                                                {product.external && (
+                                                    <span className="font-handwritten text-ink/40 text-sm">↗</span>
+                                                )}
+                                            </div>
+                                            <p className="font-handwritten text-ink/70 leading-relaxed">
+                                                {product.description}
+                                            </p>
                                         </div>
-                                        <p className="font-handwritten text-ink/70 leading-relaxed">
-                                            {product.description}
-                                        </p>
                                     </div>
-                                </div>
 
-                                {/* Hand-drawn arrow on hover */}
-                                <svg className="absolute right-6 bottom-6 w-8 h-8 text-ink/20 group-hover:text-orange-500 transition-colors" viewBox="0 0 30 30">
-                                    <path d="M5,25 Q15,20 25,10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                    <path d="M18,8 L25,10 L23,17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </div>
-                        </Link>
+                                    {/* Hand-drawn arrow on hover */}
+                                    <svg className="absolute right-6 bottom-6 w-8 h-8 text-ink/20 group-hover:text-orange-500 transition-colors" viewBox="0 0 30 30">
+                                        <path d="M5,25 Q15,20 25,10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                        <path d="M18,8 L25,10 L23,17" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                </div>
+                            </Link>
+                        </motion.div>
                     ))}
                 </div>
             </div>

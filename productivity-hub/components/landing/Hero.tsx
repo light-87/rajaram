@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 export default function Hero() {
     const [loginOpen, setLoginOpen] = useState(false);
@@ -19,54 +20,88 @@ export default function Hero() {
 
             {/* Colorful doodle shapes in background */}
             {/* Orange circle - top left */}
-            <div className="absolute top-16 left-[8%] w-20 h-20 border-4 border-orange-300 rounded-[60%_40%_55%_45%/45%_55%_40%_60%] opacity-40 pointer-events-none" />
+            <motion.div
+                initial={{ scale: 0, rotate: -45 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ duration: 0.8, type: "spring", bounce: 0.5 }}
+                className="absolute top-16 left-[8%] w-20 h-20 border-4 border-orange-300 rounded-[60%_40%_55%_45%/45%_55%_40%_60%] opacity-40 pointer-events-none"
+            />
 
             {/* Blue squiggle - top right */}
-            <svg className="absolute top-32 right-[12%] w-24 h-16 opacity-30 pointer-events-none" viewBox="0 0 100 50">
+            <motion.svg
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 0.3 }}
+                transition={{ duration: 1.5, delay: 0.3 }}
+                className="absolute top-32 right-[12%] w-24 h-16 pointer-events-none" viewBox="0 0 100 50">
                 <path d="M5,25 Q25,5 45,25 T85,25" fill="none" stroke="#60a5fa" strokeWidth="4" strokeLinecap="round" />
-            </svg>
+            </motion.svg>
 
             {/* Green circle - bottom left */}
-            <div className="absolute bottom-40 left-[5%] w-16 h-16 border-4 border-green-400 rounded-[45%_55%_50%_50%/55%_50%_50%_45%] opacity-35 pointer-events-none" />
+            <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.4, type: "spring" }}
+                className="absolute bottom-40 left-[5%] w-16 h-16 border-4 border-green-400 rounded-[45%_55%_50%_50%/55%_50%_50%_45%] opacity-35 pointer-events-none"
+            />
 
             {/* Pink star - right side */}
-            <svg className="absolute top-[45%] right-[6%] w-14 h-14 opacity-30 pointer-events-none" viewBox="0 0 50 50">
+            <motion.svg
+                initial={{ rotate: 180, opacity: 0, scale: 0 }}
+                animate={{ rotate: 0, opacity: 0.3, scale: 1 }}
+                transition={{ duration: 0.8, delay: 0.5, type: "spring" }}
+                className="absolute top-[45%] right-[6%] w-14 h-14 pointer-events-none" viewBox="0 0 50 50">
                 <path d="M25,2 L30,20 L48,20 L34,32 L40,48 L25,38 L10,48 L16,32 L2,20 L20,20 Z" fill="none" stroke="#f472b6" strokeWidth="2" strokeLinejoin="round" />
-            </svg>
+            </motion.svg>
 
             {/* Yellow zigzag - bottom right */}
-            <svg className="absolute bottom-28 right-[20%] w-20 h-8 opacity-40 pointer-events-none" viewBox="0 0 80 30">
+            <motion.svg
+                initial={{ x: 50, opacity: 0 }}
+                animate={{ x: 0, opacity: 0.4 }}
+                transition={{ duration: 0.7, delay: 0.6 }}
+                className="absolute bottom-28 right-[20%] w-20 h-8 pointer-events-none" viewBox="0 0 80 30">
                 <path d="M5,15 L20,5 L35,25 L50,5 L65,25 L75,10" fill="none" stroke="#fbbf24" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            </motion.svg>
 
             {/* Purple dots - left side */}
-            <div className="absolute top-[55%] left-[4%] opacity-30 pointer-events-none">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.3 }}
+                transition={{ duration: 1, delay: 0.8 }}
+                className="absolute top-[55%] left-[4%] pointer-events-none">
                 <div className="w-4 h-4 bg-purple-400 rounded-full mb-2" />
                 <div className="w-3 h-3 bg-purple-300 rounded-full ml-4" />
                 <div className="w-2 h-2 bg-purple-400 rounded-full ml-1 mt-1" />
-            </div>
+            </motion.div>
 
             {/* Coral heart - top center-right */}
-            <svg className="absolute top-24 left-[40%] w-8 h-8 opacity-25 pointer-events-none" viewBox="0 0 50 50">
+            <motion.svg
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", delay: 0.9, bounce: 0.6 }}
+                className="absolute top-24 left-[40%] w-8 h-8 opacity-25 pointer-events-none" viewBox="0 0 50 50">
                 <path d="M25,45 C15,35 5,25 5,15 C5,8 10,3 17,3 C22,3 25,8 25,8 C25,8 28,3 33,3 C40,3 45,8 45,15 C45,25 35,35 25,45 Z" fill="none" stroke="#fb7185" strokeWidth="2" />
-            </svg>
+            </motion.svg>
 
             {/* Teal spiral - bottom left area */}
-            <svg className="absolute bottom-[35%] left-[15%] w-12 h-12 opacity-25 pointer-events-none" viewBox="0 0 50 50">
+            <motion.svg
+                initial={{ rotate: -180, opacity: 0 }}
+                animate={{ rotate: 0, opacity: 0.25 }}
+                transition={{ duration: 1.5, delay: 1 }}
+                className="absolute bottom-[35%] left-[15%] w-12 h-12 pointer-events-none" viewBox="0 0 50 50">
                 <path d="M25,25 C25,20 30,15 35,15 C42,15 45,22 45,28 C45,38 35,45 25,45 C12,45 5,35 5,25 C5,12 15,3 28,3" fill="none" stroke="#2dd4bf" strokeWidth="2" strokeLinecap="round" />
-            </svg>
+            </motion.svg>
 
             {/* Navigation */}
             <nav className="relative z-20 flex items-center justify-between px-6 lg:px-12 py-6">
                 <Link href="/" className="flex items-center gap-2">
                     <span className="font-handwritten text-2xl text-ink">
-                        Rajaram & Pallavi
+                        Vaibhav Talekar
                     </span>
                 </Link>
 
                 <div className="flex items-center gap-6">
                     <Link href="#products" className="font-handwritten text-ink/70 hover:text-ink transition-colors hidden sm:block">
-                        Products
+                        Work
                     </Link>
                     <Link href="#about" className="font-handwritten text-ink/70 hover:text-ink transition-colors hidden sm:block">
                         About
@@ -120,57 +155,81 @@ export default function Hero() {
                     <path d="M75,25 L90,30 L85,45" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
 
-                <div className="max-w-3xl">
+                <motion.div
+                    initial={{ y: 50, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="max-w-3xl"
+                >
                     {/* Tagline with underline doodle */}
-                    <p className="font-handwritten text-lg text-ink/60 mb-4">
-                        ~ for local business owners ~
-                    </p>
+                    <motion.p
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
+                        className="font-handwritten text-lg text-ink/60 mb-4">
+                        ~ AI Specialist & Software Engineer ~
+                    </motion.p>
 
                     {/* Main Headline */}
                     <h1 className="font-handwritten text-4xl sm:text-5xl lg:text-6xl text-ink leading-tight mb-6">
-                        Software that runs
+                        Building intelligent
                         <br />
                         <span className="relative inline-block">
-                            your business
+                            systems that scale
                             {/* Hand-drawn underline */}
-                            <svg className="absolute -bottom-2 left-0 w-full h-4" viewBox="0 0 200 20" preserveAspectRatio="none">
+                            <motion.svg
+                                initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1, delay: 0.8 }}
+                                className="absolute -bottom-2 left-0 w-full h-4" viewBox="0 0 200 20" preserveAspectRatio="none">
                                 <path d="M0,10 Q50,0 100,10 T200,10" fill="none" stroke="#e85d04" strokeWidth="3" strokeLinecap="round" />
-                            </svg>
+                            </motion.svg>
                         </span>
                     </h1>
 
                     {/* Subtext in a "note" style box */}
-                    <div className="inline-block bg-yellow-100/60 px-8 py-4 my-8 rounded-[5px_10px_15px_5px/10px_5px_5px_15px] rotate-[-0.5deg] border-l-4 border-orange-400">
+                    <motion.div
+                        initial={{ scale: 0.8, rotate: -5, opacity: 0 }}
+                        animate={{ scale: 1, rotate: -0.5, opacity: 1 }}
+                        transition={{ type: "spring", bounce: 0.4, delay: 0.5 }}
+                        className="inline-block bg-yellow-100/60 px-8 py-4 my-8 rounded-[5px_10px_15px_5px/10px_5px_5px_15px] border-l-4 border-orange-400"
+                    >
                         <p className="font-handwritten text-lg text-ink/80">
-                            Inventory, reminders, billing, customers — all automated.
+                            From machine learning models to production SaaS.
                             <br />
-                            So you can focus on what you do best.
+                            Solving real problems through AI orchestration.
                         </p>
-                    </div>
+                    </motion.div>
 
                     {/* CTAs - Sketchy buttons */}
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+                    <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{ delay: 1 }}
+                        className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8"
+                    >
                         <Link
                             href="#products"
-                            className="font-handwritten px-8 py-3 bg-ink text-paper rounded-[255px_15px_225px_15px/15px_225px_15px_255px] hover:bg-ink/90 transition-colors"
+                            className="font-handwritten px-8 py-3 bg-ink text-paper rounded-[255px_15px_225px_15px/15px_225px_15px_255px] hover:bg-ink/90 hover:scale-105 transition-all"
                         >
-                            See What We Build →
+                            View My Work →
                         </Link>
                         <Link
                             href="#contact"
-                            className="font-handwritten px-8 py-3 text-ink border-2 border-ink rounded-[15px_255px_15px_225px/225px_15px_255px_15px] hover:bg-ink/5 transition-colors"
+                            className="font-handwritten px-8 py-3 text-ink border-2 border-ink rounded-[15px_255px_15px_225px/225px_15px_255px_15px] hover:bg-ink/5 hover:scale-105 transition-all"
                         >
                             Get in Touch
                         </Link>
-                    </div>
-                </div>
+                    </motion.div>
+                </motion.div>
 
                 {/* Scroll hint - hand drawn arrow */}
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: [0, 10, 0] }}
+                    transition={{ opacity: { delay: 1.5 }, y: { repeat: Infinity, duration: 1.5, ease: "easeInOut" } }}
+                    className="absolute bottom-8 left-1/2 -translate-x-1/2"
+                >
                     <svg className="w-8 h-12 text-ink/40" viewBox="0 0 30 50">
                         <path d="M15,5 L15,35 M8,28 L15,38 L22,28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                </div>
+                </motion.div>
             </div>
         </section>
     );

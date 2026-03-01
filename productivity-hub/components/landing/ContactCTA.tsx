@@ -93,11 +93,22 @@ export default function ContactCTA() {
                 {/* Footer - casual sign-off */}
                 <div className="mt-16 text-center">
                     <p className="font-handwritten text-ink/40">
-                        — Rajaram & Pallavi —
+                        — Vaibhav Talekar —
                     </p>
                     <p className="font-handwritten text-ink/30 text-sm mt-2">
-                        Maharashtra, India
+                        Guildford, UK &middot; Maharashtra, India
                     </p>
+
+                    {/* Social Links */}
+                    <div className="flex justify-center gap-4 mt-4 font-handwritten text-sm">
+                        <Link href="https://linkedin.com/in/vaibhavtalekar87" target="_blank" rel="noopener noreferrer" className="text-ink/40 hover:text-ink/70 transition-colors">
+                            LinkedIn
+                        </Link>
+                        <span className="text-ink/20">•</span>
+                        <Link href="https://github.com/vaibhavtalekar" target="_blank" rel="noopener noreferrer" className="text-ink/40 hover:text-ink/70 transition-colors">
+                            GitHub
+                        </Link>
+                    </div>
                 </div>
             </div>
         </section>

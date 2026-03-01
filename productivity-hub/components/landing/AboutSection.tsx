@@ -1,4 +1,5 @@
 "use client";
+import { motion } from "framer-motion";
 
 export default function AboutSection() {
     return (
@@ -42,48 +43,65 @@ export default function AboutSection() {
 
             <div className="relative z-10 max-w-4xl mx-auto">
                 {/* Section header */}
-                <div className="mb-12 text-center">
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.6 }}
+                    className="mb-12 text-center"
+                >
                     <div className="inline-block bg-green-100/50 px-6 py-2 rounded-[15px_255px_15px_225px/225px_15px_255px_15px] mb-4">
-                        <span className="font-handwritten text-ink/60">who we are</span>
+                        <span className="font-handwritten text-ink/60">about me</span>
                     </div>
                     <h2 className="font-handwritten text-4xl sm:text-5xl text-ink">
-                        About Us
+                        My Background
                     </h2>
-                </div>
+                </motion.div>
 
                 {/* Content as "written notes" */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                     {/* Philosophy - like a journal entry */}
                     <div className="space-y-6">
-                        <div className="p-6 bg-yellow-50/50 border-l-4 border-orange-400 rounded-r-[5px_15px_10px_5px/10px_5px_5px_15px]">
+                        <motion.div
+                            initial={{ opacity: 0, x: -40, rotate: -2 }}
+                            whileInView={{ opacity: 1, x: 0, rotate: 0 }}
+                            viewport={{ once: true, margin: "-100px" }}
+                            transition={{ duration: 0.8, type: "spring", bounce: 0.2 }}
+                            className="p-6 bg-yellow-50/50 border-l-4 border-orange-400 rounded-r-[5px_15px_10px_5px/10px_5px_5px_15px]"
+                        >
                             <h3 className="font-handwritten text-xl text-ink mb-4 underline decoration-wavy decoration-orange-300 underline-offset-4">
-                                Our Philosophy
+                                Experience & Education
                             </h3>
                             <div className="font-handwritten text-ink/80 space-y-4 leading-relaxed">
                                 <p>
-                                    Every local business owner deserves tools that work as hard as they do.
+                                    MSc in Artificial Intelligence with Distinction from the University of Surrey.
                                 </p>
                                 <p>
-                                    Not complex enterprise software. Not generic apps. But systems designed
-                                    for how YOU actually work.
+                                    I have a proven track record delivering production AI systems from research
+                                    to deployment.
                                 </p>
                                 <p>
-                                    → Water purifier techs forget service calls
+                                    → Orchestrated multi-model AI pipelines
                                     <br />
-                                    → Factory owners drown in paper registers
+                                    → Optimized speech & NLP models
                                     <br />
-                                    → Solar vendors juggle spreadsheets
+                                    → Built highly scalable SaaS platforms
                                 </p>
                                 <p className="text-ink font-medium">
-                                    We build software that solves these specific problems. ✓
+                                    I bridge the gap between complex ML and functional products. ✓
                                 </p>
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
 
                     {/* Founder - like a sticky note */}
-                    <div>
-                        <div className="relative p-6 bg-blue-50/70 rounded-[15px_10px_20px_10px/10px_20px_10px_15px] rotate-[1deg] shadow-sm border border-blue-200/50">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8, rotate: 5 }}
+                        whileInView={{ opacity: 1, scale: 1, rotate: 1 }}
+                        viewport={{ once: true, margin: "-100px" }}
+                        transition={{ duration: 0.8, delay: 0.2, type: "spring", bounce: 0.4 }}
+                    >
+                        <div className="relative p-6 bg-blue-50/70 rounded-[15px_10px_20px_10px/10px_20px_10px_15px] shadow-sm border border-blue-200/50">
                             {/* Pin doodle */}
                             <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-6 h-6 bg-red-400 rounded-full border-2 border-red-500 shadow-sm" />
 
@@ -93,23 +111,22 @@ export default function AboutSection() {
                                     Vaibhav Talekar
                                 </h3>
                                 <p className="font-handwritten text-ink/60 mb-4">
-                                    Developer & Problem Solver
+                                    AI Specialist & ML Engineer
                                 </p>
 
                                 <div className="font-handwritten text-ink/80 space-y-3 leading-relaxed">
                                     <p>
-                                        I build complete business systems — from inventory tracking
-                                        to automated workflows.
+                                        I specialize in building end-to-end solutions — from custom local
+                                        software and ERP to full-stack AI automation.
                                     </p>
                                     <p>
-                                        Each product comes from real conversations with business owners,
-                                        understanding daily struggles, building what actually fits.
+                                        My workflow combines modern web development with advanced ML algorithms.
                                     </p>
                                 </div>
 
                                 {/* Tech stack as doodle tags */}
                                 <div className="flex flex-wrap gap-2 mt-6">
-                                    {["Next.js", "React", "Node.js", "PostgreSQL"].map((tech) => (
+                                    {["Next.js", "Python", "Transformers", "Supabase", "OpenAI", "AWS", "PyTorch"].map((tech) => (
                                         <span
                                             key={tech}
                                             className="font-handwritten text-sm px-3 py-1 bg-white/60 rounded-[255px_15px_225px_15px/15px_225px_15px_255px] text-ink/60"
@@ -120,7 +137,7 @@ export default function AboutSection() {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </motion.div>
                 </div>
             </div>
         </section>

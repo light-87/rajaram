@@ -4,13 +4,13 @@ import { AuthProvider } from "@/lib/auth";
 import { ToastProvider } from "@/components/ui/Toast";
 
 export const metadata: Metadata = {
-  title: "Rajaram & Pallavi - Software for Local Businesses",
-  description: "We build automation software for local business owners. Kuberbook, Solar Sales Manager, and custom factory solutions.",
+  title: "Vaibhav Talekar - AI Specialist & Software Engineer",
+  description: "Building intelligent systems that solve real problems. Expertise in full-stack SaaS, AI orchestration, and machine learning pipelines.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Rajaram & Pallavi",
+    title: "Vaibhav Talekar Portfolio",
   },
 };
 
