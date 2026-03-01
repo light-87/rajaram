@@ -88,7 +88,8 @@ export default function ToolsPage() {
             ]);
 
             const todayLeads = (leads || []).filter((l: Lead) => {
-                const d = l.created_at instanceof Date ? l.created_at.toISOString().split('T')[0] : String(l.created_at);
+                const raw = l.created_at as unknown;
+                const d = raw instanceof Date ? raw.toISOString().split('T')[0] : String(l.created_at);
                 return d.startsWith(today);
             });
             // Only count non-trial clients in financials
