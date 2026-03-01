@@ -30,6 +30,64 @@ import { format } from "date-fns";
 import { geocodeAddress, logActivity } from "@/lib/tools-utils";
 import { useEmployeeAuth } from "@/lib/employee-auth";
 
+// WhatsApp message templates for Solar Vendor leads
+const WHATSAPP_FIRST_MESSAGE = `Namaskar ji! 🙏
+
+Mi Vaibhav, aatach aapli phone var baat zali hoti.
+He gha Solar Sales Manager cha 5-minute demo video 👇
+
+https://youtu.be/HIQxoJecSe4
+
+Yaat kaay aahe:
+✅ 16-step customer tracking -- ek pan step miss honar nahi
+✅ 5 government documents (Completion File, Net Agreement, Commissioning Report, etc.) -- ek bu
+✅ PM Surya Ghar portal cha poora pipeline tracking
+✅ Disbursement dashboard -- paisa kuthe aadla aahe, ek nazaret
+✅ WhatsApp varun customer la status update
+✅ Admin aur Employee roles -- data surakshit rahto
+
+📱 Phone var pan chalto, computer var pan. Kahi app download karayla nako.
+
+💬 Shri Balaji Industries (Pune) January pasun vaprat aahet -- 100+ customers manage kele aahet
+👉 Tyanchyashi baat karaychi asel tar number: 9049496040
+
+Video bagha, 5 minute lagtil.
+Interest asel tar Vaibhav tumhala personally call karun live demo
+
+Kahi pan prashna asel tar ithe message kara!`;
+
+const WHATSAPP_FOLLOW_UP_MESSAGE = `Namaskar! 🙏
+Kahi diwasanpurvi Solar Sales Manager cha demo video pathavla hota. Baghu shakla ka?
+Fakta 7 minute cha aahe -- ek da nakki bagha 👇
+https://youtu.be/HIQxoJecSe4
+
+Already 2 solar vendors vaprat aahet. Shri Balaji Industries ne 100+ customers manage kele aahet
+Interest asel tar nusti "ho" mhana -- tumhala call kartil live demo ani Setup sathi.`;
+
+function cleanPhoneForWhatsApp(phone: string): string {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 10) return '91' + digits;
+    if (digits.length === 11 && digits.startsWith('0')) return '91' + digits.slice(1);
+    if (digits.length === 12 && digits.startsWith('91')) return digits;
+    return digits;
+}
+
+function getWhatsAppUrl(phone: string, message: string): string {
+    const cleaned = cleanPhoneForWhatsApp(phone);
+    return `https://wa.me/${cleaned}?text=${encodeURIComponent(message)}`;
+}
+
+function getLeadAge(createdAt: string): string {
+    const diffDays = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);
+    if (diffDays === 0) return 'Added today';
+    if (diffDays === 1) return '1 day old';
+    if (diffDays < 30) return `${diffDays} days old`;
+    const diffWeeks = Math.floor(diffDays / 7);
+    if (diffDays < 60) return `${diffWeeks} week${diffWeeks > 1 ? 's' : ''} old`;
+    const diffMonths = Math.floor(diffDays / 30);
+    return `${diffMonths} month${diffMonths > 1 ? 's' : ''} old`;
+}
+
 interface LeadsModuleProps {
     brand: ProductBrand;
     onConvert?: () => void;
@@ -553,7 +611,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                     <div>
                                         <h4 className="text-lg font-bold text-text-primary group-hover:text-pink transition-colors">{lead.customer_name}</h4>
                                         <p className="text-xs text-text-secondary flex items-center gap-1 mt-1">
-                                            <Clock className="w-3 h-3" /> Added {new Date(lead.created_at).toLocaleDateString()}
+                                            <Clock className="w-3 h-3" /> {getLeadAge(lead.created_at)}
                                         </p>
                                     </div>
                                     {getStatusBadge(lead.status)}
@@ -652,6 +710,28 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                         </select>
                                     </div>
                                 </div>
+
+                                {/* WhatsApp Quick-Send Buttons - Solar Vendor only */}
+                                {brand === 'Solar Vendor' && lead.phone && (
+                                    <div className="flex gap-2">
+                                        <a
+                                            href={getWhatsAppUrl(lead.phone, WHATSAPP_FIRST_MESSAGE)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex-1 py-2 bg-green/10 text-green hover:bg-green/20 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                                        >
+                                            <MessageSquare className="w-3 h-3" /> First WA
+                                        </a>
+                                        <a
+                                            href={getWhatsAppUrl(lead.phone, WHATSAPP_FOLLOW_UP_MESSAGE)}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex-1 py-2 bg-green/10 text-green hover:bg-green/20 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                                        >
+                                            <MessageSquare className="w-3 h-3" /> Follow-up WA
+                                        </a>
+                                    </div>
+                                )}
 
                                 {/* Action Buttons */}
                                 <div className="flex gap-2">
