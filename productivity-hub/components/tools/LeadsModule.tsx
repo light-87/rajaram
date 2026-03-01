@@ -88,6 +88,13 @@ function getLeadAge(createdAt: string): string {
     return `${diffMonths} month${diffMonths > 1 ? 's' : ''} old`;
 }
 
+function getCardAgeClass(createdAt: string): string {
+    const diffDays = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);
+    if (diffDays >= 10) return 'border-red-400/60 bg-red-400/5';
+    if (diffDays >= 2) return 'border-yellow/60 bg-yellow/5';
+    return '';
+}
+
 interface LeadsModuleProps {
     brand: ProductBrand;
     onConvert?: () => void;
@@ -606,7 +613,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredLeads.map((lead) => (
-                        <div key={lead.id} className="card p-6 flex flex-col justify-between group hover:border-pink/30 transition-all">
+                        <div key={lead.id} className={`card p-6 flex flex-col justify-between group hover:border-pink/30 transition-all ${getCardAgeClass(lead.created_at)}`}>
                             <div className="space-y-4">
                                 <div className="flex items-start justify-between">
                                     <div>
