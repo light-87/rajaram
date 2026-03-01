@@ -531,6 +531,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
         switch (status) {
             case 'new': return <Badge variant="warning">New</Badge>;
             case 'contacted': return <Badge variant="sky">Contacted</Badge>;
+            case 'follow_up': return <Badge variant="coral">Follow-up Sent</Badge>;
             case 'qualified': return <Badge variant="purple">Qualified</Badge>;
             case 'converted': return <Badge variant="success">Converted</Badge>;
             case 'lost': return <Badge variant="danger">Lost</Badge>;
@@ -694,6 +695,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                         >
                                             <option value="new">New</option>
                                             <option value="contacted">Contacted</option>
+                                            <option value="follow_up">Follow-up Sent</option>
                                             <option value="qualified">Qualified</option>
                                             <option value="lost">Lost</option>
                                         </select>
