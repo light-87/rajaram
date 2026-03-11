@@ -38,13 +38,21 @@ He gha Solar Sales Manager cha 5-minute demo video
 
 https://youtu.be/HIQxoJecSe4
 
+Message for a live 10 mins demo!
+
 Yaat kaay aahe:
+- Automatic proposal generation ✅
+- Automatic invoice generator ✅
 - 16-step customer tracking -- ek pan step miss honar nahi
-- 5 government documents (Completion File, Net Agreement, Commissioning Report, etc.) -- ek bu
+- Employee management tab (See what each employee is working on)
+- 5 government documents (Completion File, Net Agreement, Commissioning Report, etc.)
 - PM Surya Ghar portal cha poora pipeline tracking
 - Disbursement dashboard -- paisa kuthe aadla aahe, ek nazaret
 - WhatsApp varun customer la status update
 - Admin aur Employee roles -- data surakshit rahto
+
+Here is a sample quotation for you:
+https://www.saundaryaroof.homes/proposal/print?vendorCode=2025&customerId=b466f5ad-fd47-460c-a210-797fd69fc74b&quotationId=b264f978-2ba5-4e31-9e40-152af3c583ca
 
 Phone var pan chalto, computer var pan. Kahi app download karayla nako.
 
@@ -61,7 +69,7 @@ Kahi diwasanpurvi Solar Sales Manager cha demo video pathavla hota. Baghu shakla
 Fakta 7 minute cha aahe -- ek da nakki bagha
 https://youtu.be/HIQxoJecSe4
 
-Already 2 solar vendors vaprat aahet. Shri Balaji Industries ne 100+ customers manage kele aahet
+Already 6 solar vendors vaprat aahet. Shri Balaji Industries (100+ customers) ani Lumen Solar, Nagpur (400+ customers) he application vaprat aahet.
 Interest asel tar nusti "ho" mhana -- tumhala call kartil live demo ani Setup sathi.`;
 
 function cleanPhoneForWhatsApp(phone: string): string {
