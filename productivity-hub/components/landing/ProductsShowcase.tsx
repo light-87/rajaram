@@ -6,21 +6,23 @@ import { motion } from "framer-motion";
 const products = [
     {
         num: "01",
-        name: "Solar Sales Manager",
-        tagline: "For solar installers",
-        description: "Track every installation through 15 steps — from first document to final payment. Automatic government document generation, finance customers, cash deals, MSEB inspections — all in one place.",
-        href: "http://saundaryaroof.homes/",
-        external: true,
-        doodle: "☀️",
-    },
-    {
-        num: "02",
         name: "BaahiAI",
         tagline: "India's smartest voice-driven expense tracker",
         description: "Zero typing required. Speak in 11 Indian languages to log deliveries and payments instantly. Uses AI compound queries to update everything seamlessly.",
         href: "https://baahi.work",
         external: true,
         doodle: "🎙️",
+        hint: "open baahi.work",
+    },
+    {
+        num: "02",
+        name: "Solar Sales Manager",
+        tagline: "For solar installers",
+        description: "Track every installation through 15 steps — from first document to final payment. Automatic government document generation, finance customers, cash deals, MSEB inspections — all in one place.",
+        href: "https://www.saundaryaroof.homes/landing",
+        external: true,
+        doodle: "☀️",
+        hint: "open saundaryaroof.homes",
     },
     {
         num: "03",
@@ -30,6 +32,7 @@ const products = [
         href: "https://kuberbook.shop",
         external: true,
         doodle: "💧",
+        hint: "open kuberbook.shop",
     },
     {
         num: "04",
@@ -39,6 +42,7 @@ const products = [
         href: "#contact",
         external: false,
         doodle: "🏭",
+        hint: null,
     },
 ];
 
@@ -138,6 +142,11 @@ export default function ProductsShowcase() {
                                             <p className="font-handwritten text-ink/70 leading-relaxed">
                                                 {product.description}
                                             </p>
+                                            {product.hint && (
+                                                <p className="font-handwritten text-xs text-ink/35 mt-3 italic group-hover:text-orange-400/70 transition-colors">
+                                                    ✦ {product.hint} ↗
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 

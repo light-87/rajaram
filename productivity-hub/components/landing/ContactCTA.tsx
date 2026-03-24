@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Github, Linkedin } from "lucide-react";
 
 export default function ContactCTA() {
     const whatsappNumber = "918975706582";
@@ -100,13 +101,27 @@ export default function ContactCTA() {
                     </p>
 
                     {/* Social Links */}
-                    <div className="flex justify-center gap-4 mt-4 font-handwritten text-sm">
-                        <Link href="https://linkedin.com/in/vaibhavtalekar87" target="_blank" rel="noopener noreferrer" className="text-ink/40 hover:text-ink/70 transition-colors">
-                            LinkedIn
+                    <div className="flex justify-center gap-5 mt-5">
+                        <Link
+                            href="https://www.linkedin.com/in/vaibhav-talekar-231846192/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-ink/40 hover:text-blue-600 transition-colors group"
+                            aria-label="LinkedIn"
+                        >
+                            <Linkedin size={18} />
+                            <span className="font-handwritten text-sm">LinkedIn</span>
                         </Link>
-                        <span className="text-ink/20">•</span>
-                        <Link href="https://github.com/vaibhavtalekar" target="_blank" rel="noopener noreferrer" className="text-ink/40 hover:text-ink/70 transition-colors">
-                            GitHub
+                        <span className="text-ink/20 self-center">•</span>
+                        <Link
+                            href="https://github.com/light-87"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-ink/40 hover:text-ink transition-colors group"
+                            aria-label="GitHub"
+                        >
+                            <Github size={18} />
+                            <span className="font-handwritten text-sm">GitHub</span>
                         </Link>
                     </div>
                 </div>
