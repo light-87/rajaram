@@ -32,7 +32,7 @@ const products = [
         href: "https://kuberbook.shop",
         external: true,
         doodle: "💧",
-        hint: null,
+        hint: "open kuberbook.shop",
     },
     {
         num: "04",
