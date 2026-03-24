@@ -6,21 +6,21 @@ import { motion } from "framer-motion";
 const products = [
     {
         num: "01",
-        name: "Solar Sales Manager",
-        tagline: "For solar installers",
-        description: "Track every installation through 15 steps — from first document to final payment. Automatic government document generation, finance customers, cash deals, MSEB inspections — all in one place.",
-        href: "http://saundaryaroof.homes/",
-        external: true,
-        doodle: "☀️",
-    },
-    {
-        num: "02",
         name: "BaahiAI",
         tagline: "India's smartest voice-driven expense tracker",
         description: "Zero typing required. Speak in 11 Indian languages to log deliveries and payments instantly. Uses AI compound queries to update everything seamlessly.",
         href: "https://baahi.work",
         external: true,
         doodle: "🎙️",
+    },
+    {
+        num: "02",
+        name: "Solar Sales Manager",
+        tagline: "For solar installers",
+        description: "Track every installation through 15 steps — from first document to final payment. Automatic government document generation, finance customers, cash deals, MSEB inspections — all in one place.",
+        href: "https://www.saundaryaroof.homes/landing",
+        external: true,
+        doodle: "☀️",
     },
     {
         num: "03",
