@@ -204,23 +204,12 @@ export default function Hero() {
                         transition={{ delay: 1 }}
                         className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8"
                     >
-                        <div className="relative">
-                            <Link
-                                href="#products"
-                                className="font-handwritten px-8 py-3 bg-ink text-paper rounded-[255px_15px_225px_15px/15px_225px_15px_255px] hover:bg-ink/90 hover:scale-105 transition-all"
-                            >
-                                View My Work →
-                            </Link>
-                            {/* Hand-drawn annotation */}
-                            <motion.div
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 1.6 }}
-                                className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap"
-                            >
-                                <span className="font-handwritten text-sm text-orange-500/80">↑ click to see my projects!</span>
-                            </motion.div>
-                        </div>
+                        <Link
+                            href="#products"
+                            className="font-handwritten px-8 py-3 bg-ink text-paper rounded-[255px_15px_225px_15px/15px_225px_15px_255px] hover:bg-ink/90 hover:scale-105 transition-all"
+                        >
+                            View My Work →
+                        </Link>
                         <Link
                             href="#contact"
                             className="font-handwritten px-8 py-3 text-ink border-2 border-ink rounded-[15px_255px_15px_225px/225px_15px_255px_15px] hover:bg-ink/5 hover:scale-105 transition-all"
