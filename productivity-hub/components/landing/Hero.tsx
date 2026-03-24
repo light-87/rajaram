@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Github, Linkedin } from "lucide-react";
 
 export default function Hero() {
     const [loginOpen, setLoginOpen] = useState(false);
@@ -108,6 +109,26 @@ export default function Hero() {
                     </Link>
                     <Link href="#contact" className="font-handwritten text-ink/70 hover:text-ink transition-colors hidden sm:block">
                         Contact
+                    </Link>
+
+                    {/* Social icons */}
+                    <Link
+                        href="https://www.linkedin.com/in/vaibhav-talekar-231846192/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-ink/50 hover:text-blue-600 transition-colors hidden sm:block"
+                        aria-label="LinkedIn"
+                    >
+                        <Linkedin size={20} />
+                    </Link>
+                    <Link
+                        href="https://github.com/light-87"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-ink/50 hover:text-ink transition-colors hidden sm:block"
+                        aria-label="GitHub"
+                    >
+                        <Github size={20} />
                     </Link>
 
                     {/* Login Button - Sketchy style */}
