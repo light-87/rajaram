@@ -20,7 +20,8 @@ import {
     CheckCircle2,
     ChevronRight,
     Activity,
-    Upload
+    Upload,
+    BarChart2
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
@@ -477,6 +478,11 @@ export default function ToolsPage() {
                                 <Link href="/tools/admin/vendor-data" className="flex items-center gap-3 p-3 hover:bg-border/10 rounded-xl transition-colors">
                                     <Upload className="w-5 h-5 text-green" />
                                     <span className="text-sm text-text-primary">Vendor Data</span>
+                                </Link>
+
+                                <Link href="/tools/admin/manager" className="flex items-center gap-3 p-3 hover:bg-border/10 rounded-xl transition-colors">
+                                    <BarChart2 className="w-5 h-5 text-yellow" />
+                                    <span className="text-sm text-text-primary">Intern Manager</span>
                                 </Link>
                             </div>
                         )}
