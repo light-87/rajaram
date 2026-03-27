@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
         const state = searchParams.get("state") || "";
         const district = searchParams.get("district") || "";
         const tier = searchParams.get("tier") || ""; // "500+", "100-499", "<100"
+        const assignedTo = searchParams.get("assigned_to") || ""; // UUID of intern
 
         // Build vendor_prospects WHERE clause
         const conditions: string[] = [];
@@ -96,70 +97,71 @@ export async function GET(request: NextRequest) {
         );
 
         // 6. Lead status breakdown - join vendor_prospects with leads via vendor_prospect_id
-        // We need leads that came from vendor_prospects matching our filters
-        const leadStatusQuery = state
-            ? `SELECT
-                    l.status,
-                    COUNT(*)::int as count
-               FROM leads l
-               INNER JOIN vendor_prospects vp ON l.vendor_prospect_id = vp.id
-               WHERE vp.state = $1 ${district ? `AND vp.district = $2` : ""}
-               GROUP BY l.status
-               ORDER BY count DESC`
-            : `SELECT
-                    l.status,
-                    COUNT(*)::int as count
-               FROM leads l
-               INNER JOIN vendor_prospects vp ON l.vendor_prospect_id = vp.id
-               GROUP BY l.status
-               ORDER BY count DESC`;
-        const leadStatusParams = state ? (district ? [state, district] : [state]) : [];
+        // Support optional assigned_to (intern) filter
+        const buildLeadStatusQuery = () => {
+            const leadConds: string[] = [];
+            const lsParams: any[] = [];
+            let idx = 1;
+            if (state) { leadConds.push(`vp.state = $${idx++}`); lsParams.push(state); }
+            if (district) { leadConds.push(`vp.district = $${idx++}`); lsParams.push(district); }
+            if (assignedTo) { leadConds.push(`l.assigned_to = $${idx++}`); lsParams.push(assignedTo); }
+            const where = leadConds.length > 0 ? `WHERE ${leadConds.join(" AND ")}` : "";
+            return {
+                query: `SELECT l.status, COUNT(*)::int as count
+                        FROM leads l
+                        INNER JOIN vendor_prospects vp ON l.vendor_prospect_id = vp.id
+                        ${where}
+                        GROUP BY l.status ORDER BY count DESC`,
+                params: lsParams
+            };
+        };
+        const { query: leadStatusQuery, params: leadStatusParams } = buildLeadStatusQuery();
         const leadStatus = await sql.query(leadStatusQuery, leadStatusParams);
 
         // 7. Converted clients + revenue from vendor-sourced leads
-        const clientRevenueQuery = state
-            ? `SELECT
+        const buildClientRevenueQuery = () => {
+            const crConds: string[] = ["l.status = 'converted'"];
+            const crParams: any[] = [];
+            let idx = 1;
+            if (state) { crConds.push(`vp.state = $${idx++}`); crParams.push(state); }
+            if (district) { crConds.push(`vp.district = $${idx++}`); crParams.push(district); }
+            if (assignedTo) { crConds.push(`l.assigned_to = $${idx++}`); crParams.push(assignedTo); }
+            return {
+                query: `SELECT
                     COUNT(DISTINCT bc.id)::int as client_count,
                     COALESCE(SUM(bc.setup_profit), 0)::numeric as total_setup_profit,
                     COALESCE(SUM(bc.recurring_profit), 0)::numeric as total_recurring_profit,
                     COALESCE(SUM(bc.contract_value), 0)::numeric as total_contract_value
-               FROM business_clients bc
-               INNER JOIN leads l ON l.status = 'converted'
-                   AND l.customer_name = bc.name
-               INNER JOIN vendor_prospects vp ON l.vendor_prospect_id = vp.id
-               WHERE vp.state = $1 ${district ? `AND vp.district = $2` : ""}`
-            : `SELECT
-                    COUNT(DISTINCT bc.id)::int as client_count,
-                    COALESCE(SUM(bc.setup_profit), 0)::numeric as total_setup_profit,
-                    COALESCE(SUM(bc.recurring_profit), 0)::numeric as total_recurring_profit,
-                    COALESCE(SUM(bc.contract_value), 0)::numeric as total_contract_value
-               FROM business_clients bc
-               INNER JOIN leads l ON l.status = 'converted'
-                   AND l.customer_name = bc.name
-               INNER JOIN vendor_prospects vp ON l.vendor_prospect_id = vp.id`;
-        const clientRevenueParams = state ? (district ? [state, district] : [state]) : [];
+                FROM business_clients bc
+                INNER JOIN leads l ON l.status = 'converted' AND l.customer_name = bc.name
+                INNER JOIN vendor_prospects vp ON l.vendor_prospect_id = vp.id
+                WHERE ${crConds.join(" AND ")}`,
+                params: crParams
+            };
+        };
+        const { query: clientRevenueQuery, params: clientRevenueParams } = buildClientRevenueQuery();
         const clientRevenue = await sql.query(clientRevenueQuery, clientRevenueParams);
 
         // 8. Per-district lead status breakdown (for the selected state)
-        const districtLeadStatusQuery = state
-            ? `SELECT
-                    vp.district,
-                    l.status,
-                    COUNT(*)::int as count
-               FROM leads l
-               INNER JOIN vendor_prospects vp ON l.vendor_prospect_id = vp.id
-               WHERE vp.state = $1 ${district ? `AND vp.district = $2` : ""}
-               GROUP BY vp.district, l.status
-               ORDER BY vp.district, count DESC`
-            : `SELECT
-                    vp.district,
-                    l.status,
-                    COUNT(*)::int as count
-               FROM leads l
-               INNER JOIN vendor_prospects vp ON l.vendor_prospect_id = vp.id
-               GROUP BY vp.district, l.status
-               ORDER BY vp.district, count DESC`;
-        const districtLeadStatusParams = state ? (district ? [state, district] : [state]) : [];
+        const buildDistrictLeadStatusQuery = () => {
+            const dlConds: string[] = [];
+            const dlParams: any[] = [];
+            let idx = 1;
+            if (state) { dlConds.push(`vp.state = $${idx++}`); dlParams.push(state); }
+            if (district) { dlConds.push(`vp.district = $${idx++}`); dlParams.push(district); }
+            if (assignedTo) { dlConds.push(`l.assigned_to = $${idx++}`); dlParams.push(assignedTo); }
+            const where = dlConds.length > 0 ? `WHERE ${dlConds.join(" AND ")}` : "";
+            return {
+                query: `SELECT vp.district, l.status, COUNT(*)::int as count
+                        FROM leads l
+                        INNER JOIN vendor_prospects vp ON l.vendor_prospect_id = vp.id
+                        ${where}
+                        GROUP BY vp.district, l.status
+                        ORDER BY vp.district, count DESC`,
+                params: dlParams
+            };
+        };
+        const { query: districtLeadStatusQuery, params: districtLeadStatusParams } = buildDistrictLeadStatusQuery();
         const districtLeadStatus = await sql.query(districtLeadStatusQuery, districtLeadStatusParams);
 
         // 9. Get unique districts for selected state (for filter dropdown)

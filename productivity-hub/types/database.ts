@@ -135,7 +135,11 @@ export interface Note {
 
 export type UserRole = 'admin' | 'employee';
 export type ProductBrand = 'Kuberbook' | 'Solar Vendor';
-export type LeadStatus = 'new' | 'contacted' | 'follow_up' | 'qualified' | 'converted' | 'lost';
+export type LeadStatus =
+  // Kuberbook (legacy statuses)
+  | 'new' | 'contacted' | 'follow_up' | 'qualified' | 'converted' | 'lost'
+  // Solar Vendor (call-workflow statuses)
+  | 'not_called' | 'no_answer' | 'not_interested' | 'interested' | 'demo_scheduled' | 'disqualified';
 export type LeadPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type FollowUpType = 'call' | 'email' | 'meeting' | 'visit' | 'whatsapp';
 export type FollowUpStatus = 'pending' | 'completed' | 'cancelled' | 'rescheduled';
@@ -174,6 +178,13 @@ export interface Lead {
   next_follow_up?: string;
   follow_up_notes?: string;
   vendor_prospect_id?: string;
+  // Solar Vendor call-tracking fields
+  call_date?: string;
+  call_notes?: string;
+  attempt_count?: number;
+  district?: string;
+  state?: string;
+  installations?: number;
   created_at: string;
   updated_at: string;
 }
