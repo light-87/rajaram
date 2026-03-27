@@ -17,6 +17,13 @@ function EmployeeAuthGuard({ children }: { children: React.ReactNode }) {
         }
     }, [isAuthenticated, pathname, router]);
 
+    // Register service worker for PWA install support
+    useEffect(() => {
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/sw.js").catch(() => {});
+        }
+    }, []);
+
     if (!isAuthenticated && pathname !== "/tools/login") {
         return null;
     }
