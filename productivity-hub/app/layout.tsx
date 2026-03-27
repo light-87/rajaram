@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Vaibhav Talekar Portfolio",
+    title: "RP Portal",
   },
 };
 

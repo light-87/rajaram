@@ -31,6 +31,7 @@ import { showToast } from "@/components/ui/Toast";
 import EmployeePointsCard from "@/components/tools/EmployeePointsCard";
 import AnnouncementBoard from "@/components/tools/AnnouncementBoard";
 import CustomerAssignmentTracker from "@/components/tools/CustomerAssignmentTracker";
+import InstallPWAButton from "@/components/tools/InstallPWAButton";
 
 interface DashboardData {
     totalLeads: number;
@@ -148,6 +149,7 @@ export default function ToolsPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
+                        <InstallPWAButton />
                         {/* Notifications Bell */}
                         {data.notifications.length > 0 && (
                             <div className="relative">
