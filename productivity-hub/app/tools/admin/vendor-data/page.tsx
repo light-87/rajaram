@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEmployeeAuth } from "@/lib/employee-auth";
 import { showToast } from "@/components/ui/Toast";
+import VendorAnalyticsDashboard from "@/components/tools/VendorAnalyticsDashboard";
 import {
     ArrowLeft,
     Upload,
@@ -14,10 +15,13 @@ import {
     MapPin,
     BarChart3,
     X,
+    PieChart,
 } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+
+type Tab = "upload" | "analytics";
 
 interface ParsedRow {
     state: string;
@@ -91,6 +95,7 @@ function parseCSV(csvText: string): ParsedRow[] {
 
 export default function VendorDataPage() {
     const { isAdmin, employee } = useEmployeeAuth();
+    const [activeTab, setActiveTab] = useState<Tab>("analytics");
 
     const [files, setFiles] = useState<File[]>([]);
     const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
@@ -212,248 +217,282 @@ export default function VendorDataPage() {
         <div className="min-h-screen bg-background pb-20">
             {/* Header */}
             <div className="bg-green/10 border-b border-green/20 px-4 sm:px-6 lg:px-8 py-6">
-                <div className="max-w-5xl mx-auto space-y-1">
-                    <Link
-                        href="/tools"
-                        className="text-green flex items-center gap-1 text-sm font-bold hover:underline mb-2"
-                    >
-                        <ArrowLeft className="w-4 h-4" /> Back to Portal
-                    </Link>
-                    <h1 className="text-3xl font-bold text-text-primary">Vendor Data Management</h1>
-                    <p className="text-text-secondary">
-                        Upload CSV files to populate vendor prospects for your team
-                    </p>
+                <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <Link
+                            href="/tools"
+                            className="text-green flex items-center gap-1 text-sm font-bold hover:underline mb-2"
+                        >
+                            <ArrowLeft className="w-4 h-4" /> Back to Portal
+                        </Link>
+                        <h1 className="text-3xl font-bold text-text-primary">Vendor Data Management</h1>
+                        <p className="text-text-secondary">
+                            Upload CSV files and analyze vendor prospects
+                        </p>
+                    </div>
+
+                    {/* Tab Switcher */}
+                    <div className="flex bg-background/50 p-1 rounded-xl border border-border/50 self-start sm:self-center">
+                        <button
+                            onClick={() => setActiveTab("upload")}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${
+                                activeTab === "upload"
+                                    ? "bg-green text-background shadow-md"
+                                    : "text-text-secondary hover:text-text-primary"
+                            }`}
+                        >
+                            <Upload className="w-4 h-4" />
+                            Upload
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("analytics")}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 ${
+                                activeTab === "analytics"
+                                    ? "bg-green text-background shadow-md"
+                                    : "text-text-secondary hover:text-text-primary"
+                            }`}
+                        >
+                            <PieChart className="w-4 h-4" />
+                            Analytics
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="card p-5 border-l-4 border-l-green">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-text-secondary uppercase font-bold">Total Vendors</p>
-                                <p className="text-2xl font-bold text-text-primary mt-1">{totalVendors}</p>
-                            </div>
-                            <Database className="w-8 h-8 text-green/30" />
-                        </div>
-                    </div>
-
-                    <div className="card p-5 border-l-4 border-l-sky">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-text-secondary uppercase font-bold">States</p>
-                                <p className="text-2xl font-bold text-text-primary mt-1">{stateStats.length}</p>
-                            </div>
-                            <MapPin className="w-8 h-8 text-sky/30" />
-                        </div>
-                    </div>
-
-                    <div className="card p-5 border-l-4 border-l-purple">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-xs text-text-secondary uppercase font-bold">Top State</p>
-                                <p className="text-lg font-bold text-text-primary mt-1 truncate">
-                                    {stateStats[0]?.state || "—"}
-                                </p>
-                            </div>
-                            <BarChart3 className="w-8 h-8 text-purple/30" />
-                        </div>
-                        {stateStats[0] && (
-                            <p className="text-xs text-purple mt-1">{stateStats[0].count} vendors</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Upload Section */}
-                <div className="card p-6 space-y-6">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-green/10">
-                            <Upload className="w-6 h-6 text-green" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-text-primary">Upload CSV Files</h2>
-                            <p className="text-sm text-text-secondary">
-                                Upload vendor CSV files (one per district). Duplicate vendors are automatically handled.
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* File Input */}
-                    <div className="relative">
-                        {files.length === 0 ? (
-                            <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border/50 rounded-xl hover:border-green/30 transition-colors cursor-pointer bg-background">
-                                <FileSpreadsheet className="w-12 h-12 text-text-secondary mb-3" />
-                                <p className="text-sm font-medium text-text-primary">
-                                    Click to select CSV files
-                                </p>
-                                <p className="text-xs text-text-secondary mt-1">
-                                    Expected format: state, district, company_name, brand_name, contact_person, email, phone, installations, capacity_kwp, scraped_at
-                                </p>
-                                <input
-                                    type="file"
-                                    accept=".csv"
-                                    multiple
-                                    onChange={handleFileSelect}
-                                    className="absolute inset-0 opacity-0 cursor-pointer"
-                                />
-                            </label>
-                        ) : (
-                            <div className="p-4 bg-background rounded-xl border border-border/30 space-y-3">
+                {activeTab === "upload" ? (
+                    <>
+                        {/* Stats Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="card p-5 border-l-4 border-l-green">
                                 <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <FileSpreadsheet className="w-5 h-5 text-green" />
-                                        <span className="text-sm font-bold text-text-primary">
-                                            {files.length} file{files.length > 1 ? "s" : ""} selected
-                                        </span>
+                                    <div>
+                                        <p className="text-xs text-text-secondary uppercase font-bold">Total Vendors</p>
+                                        <p className="text-2xl font-bold text-text-primary mt-1">{totalVendors}</p>
                                     </div>
-                                    <button
-                                        onClick={clearFiles}
-                                        className="p-1.5 text-text-secondary hover:text-pink transition-colors"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
+                                    <Database className="w-8 h-8 text-green/30" />
                                 </div>
+                            </div>
 
-                                {/* File names */}
-                                <div className="flex flex-wrap gap-2">
-                                    {files.map((f, i) => (
-                                        <span
-                                            key={i}
-                                            className="px-2 py-1 bg-green/10 text-green rounded-md text-xs font-medium"
-                                        >
-                                            {f.name}
-                                        </span>
-                                    ))}
+                            <div className="card p-5 border-l-4 border-l-sky">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs text-text-secondary uppercase font-bold">States</p>
+                                        <p className="text-2xl font-bold text-text-primary mt-1">{stateStats.length}</p>
+                                    </div>
+                                    <MapPin className="w-8 h-8 text-sky/30" />
                                 </div>
+                            </div>
 
-                                {/* Parsed summary */}
-                                {parsedRows.length > 0 && (
-                                    <div className="p-3 bg-background-card rounded-lg space-y-2">
-                                        <p className="text-sm font-medium text-text-primary">
-                                            📊 {parsedRows.length} vendors parsed
+                            <div className="card p-5 border-l-4 border-l-purple">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs text-text-secondary uppercase font-bold">Top State</p>
+                                        <p className="text-lg font-bold text-text-primary mt-1 truncate">
+                                            {stateStats[0]?.state || "\u2014"}
                                         </p>
-                                        <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
-                                            <span>
-                                                States: {parsedStates.join(", ")}
-                                            </span>
-                                            <span>•</span>
-                                            <span>{parsedDistricts.length} district{parsedDistricts.length > 1 ? "s" : ""}</span>
+                                    </div>
+                                    <BarChart3 className="w-8 h-8 text-purple/30" />
+                                </div>
+                                {stateStats[0] && (
+                                    <p className="text-xs text-purple mt-1">{stateStats[0].count} vendors</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Upload Section */}
+                        <div className="card p-6 space-y-6">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-lg bg-green/10">
+                                    <Upload className="w-6 h-6 text-green" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-text-primary">Upload CSV Files</h2>
+                                    <p className="text-sm text-text-secondary">
+                                        Upload vendor CSV files (one per district). Duplicate vendors are automatically handled.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* File Input */}
+                            <div className="relative">
+                                {files.length === 0 ? (
+                                    <label className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-border/50 rounded-xl hover:border-green/30 transition-colors cursor-pointer bg-background">
+                                        <FileSpreadsheet className="w-12 h-12 text-text-secondary mb-3" />
+                                        <p className="text-sm font-medium text-text-primary">
+                                            Click to select CSV files
+                                        </p>
+                                        <p className="text-xs text-text-secondary mt-1">
+                                            Expected format: state, district, company_name, brand_name, contact_person, email, phone, installations, capacity_kwp, scraped_at
+                                        </p>
+                                        <input
+                                            type="file"
+                                            accept=".csv"
+                                            multiple
+                                            onChange={handleFileSelect}
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                        />
+                                    </label>
+                                ) : (
+                                    <div className="p-4 bg-background rounded-xl border border-border/30 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <FileSpreadsheet className="w-5 h-5 text-green" />
+                                                <span className="text-sm font-bold text-text-primary">
+                                                    {files.length} file{files.length > 1 ? "s" : ""} selected
+                                                </span>
+                                            </div>
+                                            <button
+                                                onClick={clearFiles}
+                                                className="p-1.5 text-text-secondary hover:text-pink transition-colors"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
                                         </div>
 
-                                        {/* Preview first 5 rows */}
-                                        <div className="overflow-x-auto mt-2">
-                                            <table className="w-full text-xs">
-                                                <thead>
-                                                    <tr className="border-b border-border/30">
-                                                        <th className="text-left p-1.5 text-text-secondary font-medium">Company</th>
-                                                        <th className="text-left p-1.5 text-text-secondary font-medium">District</th>
-                                                        <th className="text-left p-1.5 text-text-secondary font-medium">Phone</th>
-                                                        <th className="text-right p-1.5 text-text-secondary font-medium">Installations</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {parsedRows.slice(0, 5).map((row, i) => (
-                                                        <tr key={i} className="border-b border-border/10">
-                                                            <td className="p-1.5 text-text-primary truncate max-w-[200px]">{row.company_name}</td>
-                                                            <td className="p-1.5 text-text-secondary">{row.district}</td>
-                                                            <td className="p-1.5 text-text-secondary">{row.phone}</td>
-                                                            <td className="p-1.5 text-right text-text-secondary">{row.installations}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                            {parsedRows.length > 5 && (
-                                                <p className="text-xs text-text-secondary text-center mt-2">
-                                                    ...and {parsedRows.length - 5} more rows
-                                                </p>
-                                            )}
+                                        {/* File names */}
+                                        <div className="flex flex-wrap gap-2">
+                                            {files.map((f, i) => (
+                                                <span
+                                                    key={i}
+                                                    className="px-2 py-1 bg-green/10 text-green rounded-md text-xs font-medium"
+                                                >
+                                                    {f.name}
+                                                </span>
+                                            ))}
                                         </div>
+
+                                        {/* Parsed summary */}
+                                        {parsedRows.length > 0 && (
+                                            <div className="p-3 bg-background-card rounded-lg space-y-2">
+                                                <p className="text-sm font-medium text-text-primary">
+                                                    {parsedRows.length} vendors parsed
+                                                </p>
+                                                <div className="flex flex-wrap gap-2 text-xs text-text-secondary">
+                                                    <span>
+                                                        States: {parsedStates.join(", ")}
+                                                    </span>
+                                                    <span>•</span>
+                                                    <span>{parsedDistricts.length} district{parsedDistricts.length > 1 ? "s" : ""}</span>
+                                                </div>
+
+                                                {/* Preview first 5 rows */}
+                                                <div className="overflow-x-auto mt-2">
+                                                    <table className="w-full text-xs">
+                                                        <thead>
+                                                            <tr className="border-b border-border/30">
+                                                                <th className="text-left p-1.5 text-text-secondary font-medium">Company</th>
+                                                                <th className="text-left p-1.5 text-text-secondary font-medium">District</th>
+                                                                <th className="text-left p-1.5 text-text-secondary font-medium">Phone</th>
+                                                                <th className="text-right p-1.5 text-text-secondary font-medium">Installations</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {parsedRows.slice(0, 5).map((row, i) => (
+                                                                <tr key={i} className="border-b border-border/10">
+                                                                    <td className="p-1.5 text-text-primary truncate max-w-[200px]">{row.company_name}</td>
+                                                                    <td className="p-1.5 text-text-secondary">{row.district}</td>
+                                                                    <td className="p-1.5 text-text-secondary">{row.phone}</td>
+                                                                    <td className="p-1.5 text-right text-text-secondary">{row.installations}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                    {parsedRows.length > 5 && (
+                                                        <p className="text-xs text-text-secondary text-center mt-2">
+                                                            ...and {parsedRows.length - 5} more rows
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Upload Button */}
+                                        <button
+                                            onClick={handleUpload}
+                                            disabled={isUploading || parsedRows.length === 0}
+                                            className="w-full py-3 bg-green text-white rounded-xl font-bold shadow-lg hover:bg-green/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            {isUploading ? (
+                                                <>
+                                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                    Uploading {parsedRows.length} vendors...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Upload className="w-4 h-4" />
+                                                    Upload {parsedRows.length} Vendors to Database
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
                                 )}
+                            </div>
 
-                                {/* Upload Button */}
-                                <button
-                                    onClick={handleUpload}
-                                    disabled={isUploading || parsedRows.length === 0}
-                                    className="w-full py-3 bg-green text-white rounded-xl font-bold shadow-lg hover:bg-green/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {isUploading ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            Uploading {parsedRows.length} vendors...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="w-4 h-4" />
-                                            Upload {parsedRows.length} Vendors to Database
-                                        </>
+                            {/* Upload Result */}
+                            {uploadResult && (
+                                <div className="p-4 bg-green/5 border border-green/20 rounded-xl space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <CheckCircle2 className="w-5 h-5 text-green" />
+                                        <h3 className="font-bold text-green">Upload Complete</h3>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3 text-center">
+                                        <div className="p-2 bg-background rounded-lg">
+                                            <p className="text-lg font-bold text-green">{uploadResult.inserted}</p>
+                                            <p className="text-xs text-text-secondary">Processed</p>
+                                        </div>
+                                        <div className="p-2 bg-background rounded-lg">
+                                            <p className="text-lg font-bold text-yellow">{uploadResult.skipped}</p>
+                                            <p className="text-xs text-text-secondary">Skipped</p>
+                                        </div>
+                                        <div className="p-2 bg-background rounded-lg">
+                                            <p className="text-lg font-bold text-text-primary">{uploadResult.total}</p>
+                                            <p className="text-xs text-text-secondary">Total Rows</p>
+                                        </div>
+                                    </div>
+                                    {uploadResult.errors && uploadResult.errors.length > 0 && (
+                                        <div className="p-2 bg-pink/5 border border-pink/20 rounded-lg mt-2">
+                                            <p className="text-xs text-pink font-medium">Errors:</p>
+                                            {uploadResult.errors.map((err, i) => (
+                                                <p key={i} className="text-xs text-text-secondary">{err}</p>
+                                            ))}
+                                        </div>
                                     )}
-                                </button>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Upload Result */}
-                    {uploadResult && (
-                        <div className="p-4 bg-green/5 border border-green/20 rounded-xl space-y-2">
-                            <div className="flex items-center gap-2">
-                                <CheckCircle2 className="w-5 h-5 text-green" />
-                                <h3 className="font-bold text-green">Upload Complete</h3>
-                            </div>
-                            <div className="grid grid-cols-3 gap-3 text-center">
-                                <div className="p-2 bg-background rounded-lg">
-                                    <p className="text-lg font-bold text-green">{uploadResult.inserted}</p>
-                                    <p className="text-xs text-text-secondary">Processed</p>
-                                </div>
-                                <div className="p-2 bg-background rounded-lg">
-                                    <p className="text-lg font-bold text-yellow">{uploadResult.skipped}</p>
-                                    <p className="text-xs text-text-secondary">Skipped</p>
-                                </div>
-                                <div className="p-2 bg-background rounded-lg">
-                                    <p className="text-lg font-bold text-text-primary">{uploadResult.total}</p>
-                                    <p className="text-xs text-text-secondary">Total Rows</p>
-                                </div>
-                            </div>
-                            {uploadResult.errors && uploadResult.errors.length > 0 && (
-                                <div className="p-2 bg-pink/5 border border-pink/20 rounded-lg mt-2">
-                                    <p className="text-xs text-pink font-medium">Errors:</p>
-                                    {uploadResult.errors.map((err, i) => (
-                                        <p key={i} className="text-xs text-text-secondary">{err}</p>
-                                    ))}
                                 </div>
                             )}
                         </div>
-                    )}
-                </div>
 
-                {/* State Breakdown */}
-                {stateStats.length > 0 && (
-                    <div className="card p-6">
-                        <h3 className="font-bold text-text-primary flex items-center gap-2 mb-4">
-                            <BarChart3 className="w-5 h-5 text-purple" /> Vendors by State
-                        </h3>
-                        <div className="space-y-2">
-                            {stateStats.map((stat) => (
-                                <div key={stat.state} className="flex items-center gap-3">
-                                    <span className="text-sm text-text-primary font-medium w-40 truncate">
-                                        {stat.state}
-                                    </span>
-                                    <div className="flex-1 h-6 bg-background rounded-full overflow-hidden">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-green/80 to-green rounded-full transition-all duration-500"
-                                            style={{
-                                                width: `${(stat.count / totalVendors) * 100}%`,
-                                            }}
-                                        />
-                                    </div>
-                                    <span className="text-xs text-text-secondary font-mono w-12 text-right">
-                                        {stat.count}
-                                    </span>
+                        {/* State Breakdown */}
+                        {stateStats.length > 0 && (
+                            <div className="card p-6">
+                                <h3 className="font-bold text-text-primary flex items-center gap-2 mb-4">
+                                    <BarChart3 className="w-5 h-5 text-purple" /> Vendors by State
+                                </h3>
+                                <div className="space-y-2">
+                                    {stateStats.map((stat) => (
+                                        <div key={stat.state} className="flex items-center gap-3">
+                                            <span className="text-sm text-text-primary font-medium w-40 truncate">
+                                                {stat.state}
+                                            </span>
+                                            <div className="flex-1 h-6 bg-background rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-green/80 to-green rounded-full transition-all duration-500"
+                                                    style={{
+                                                        width: `${(stat.count / totalVendors) * 100}%`,
+                                                    }}
+                                                />
+                                            </div>
+                                            <span className="text-xs text-text-secondary font-mono w-12 text-right">
+                                                {stat.count}
+                                            </span>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <VendorAnalyticsDashboard />
                 )}
             </main>
         </div>
