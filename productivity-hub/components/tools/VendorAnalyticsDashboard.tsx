@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Loading from "@/components/ui/Loading";
+import { supabase } from "@/lib/supabase";
+import { Profile } from "@/types/database";
 import {
     Database,
     MapPin,
@@ -14,6 +16,8 @@ import {
     IndianRupee,
     ArrowDownToLine,
     Users,
+    User,
+    ChevronDown,
 } from "lucide-react";
 import {
     BarChart,
@@ -45,21 +49,37 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
+    // Kuberbook (legacy)
     new: "#38BDF8",
     contacted: "#FACC15",
     follow_up: "#FB923C",
     qualified: "#8B5CF6",
     converted: "#22C55E",
     lost: "#EC4899",
+    // Solar Vendor
+    not_called: "#94A3B8",
+    no_answer: "#FACC15",
+    not_interested: "#EC4899",
+    interested: "#4ADE80",
+    demo_scheduled: "#8B5CF6",
+    disqualified: "#6B7280",
 };
 
 const STATUS_LABELS: Record<string, string> = {
+    // Kuberbook (legacy)
     new: "New",
     contacted: "Contacted",
     follow_up: "Follow Up",
     qualified: "Qualified",
     converted: "Converted",
     lost: "Lost",
+    // Solar Vendor
+    not_called: "Not Called",
+    no_answer: "No Answer",
+    not_interested: "Not Interested",
+    interested: "Interested",
+    demo_scheduled: "Demo Scheduled",
+    disqualified: "Disqualified",
 };
 
 interface DistrictStat {
@@ -122,6 +142,15 @@ export default function VendorAnalyticsDashboard() {
     const [selectedState, setSelectedState] = useState("MAHARASHTRA");
     const [selectedDistrict, setSelectedDistrict] = useState("");
     const [selectedTier, setSelectedTier] = useState("");
+    const [selectedIntern, setSelectedIntern] = useState("");
+    const [employees, setEmployees] = useState<Profile[]>([]);
+
+    // Fetch employees for intern filter
+    useEffect(() => {
+        supabase.from("profiles").select("*").eq("is_active", true).order("full_name").then(({ data: profiles }) => {
+            setEmployees(profiles || []);
+        });
+    }, []);
 
     const fetchAnalytics = useCallback(async () => {
         setIsLoading(true);
@@ -130,6 +159,7 @@ export default function VendorAnalyticsDashboard() {
             if (selectedState) params.set("state", selectedState);
             if (selectedDistrict) params.set("district", selectedDistrict);
             if (selectedTier) params.set("tier", selectedTier);
+            if (selectedIntern) params.set("assigned_to", selectedIntern);
             const res = await fetch(`/api/vendor-prospects/analytics?${params}`);
             const json = await res.json();
             if (res.ok) {
@@ -140,7 +170,7 @@ export default function VendorAnalyticsDashboard() {
         } finally {
             setIsLoading(false);
         }
-    }, [selectedState, selectedDistrict, selectedTier]);
+    }, [selectedState, selectedDistrict, selectedTier, selectedIntern]);
 
     useEffect(() => {
         fetchAnalytics();
@@ -255,6 +285,27 @@ export default function VendorAnalyticsDashboard() {
                             ))}
                         </div>
                     </div>
+
+                    {/* Intern Filter */}
+                    {employees.length > 0 && (
+                        <div>
+                            <label className="text-xs text-text-secondary font-bold block mb-1">Intern / Employee</label>
+                            <div className="relative">
+                                <User className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-secondary pointer-events-none" />
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-secondary pointer-events-none" />
+                                <select
+                                    value={selectedIntern}
+                                    onChange={(e) => setSelectedIntern(e.target.value)}
+                                    className="pl-7 pr-7 py-2 bg-background border border-border/50 rounded-lg text-sm text-text-primary focus:outline-none focus:border-purple/50 appearance-none cursor-pointer"
+                                >
+                                    <option value="">All Interns</option>
+                                    {employees.map((emp) => (
+                                        <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 

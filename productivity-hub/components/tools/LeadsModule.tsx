@@ -23,7 +23,14 @@ import {
     CheckCircle2,
     MessageSquare,
     Trash2,
-    Database
+    Database,
+    PhoneCall,
+    PhoneOff,
+    PhoneMissed,
+    ChevronDown,
+    Building2,
+    Zap,
+    Hash
 } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
 import { format } from "date-fns";
@@ -103,6 +110,25 @@ function getCardAgeClass(createdAt: string): string {
     return '';
 }
 
+// Solar-specific status configuration
+const SOLAR_STATUSES = [
+    { value: 'not_called'     as const, label: 'Not Called',       badgeVariant: 'sky'     as const, description: 'No attempt yet' },
+    { value: 'no_answer'      as const, label: 'No Answer',        badgeVariant: 'warning' as const, description: 'Called, no pick up' },
+    { value: 'not_interested' as const, label: 'Not Interested',   badgeVariant: 'danger'  as const, description: 'Vendor declined' },
+    { value: 'interested'     as const, label: 'Interested',       badgeVariant: 'success' as const, description: 'Wants to know more' },
+    { value: 'demo_scheduled' as const, label: 'Demo Scheduled',   badgeVariant: 'purple'  as const, description: 'Demo booked' },
+    { value: 'converted'      as const, label: 'Converted',        badgeVariant: 'success' as const, description: 'Signed up' },
+    { value: 'disqualified'   as const, label: 'Disqualified',     badgeVariant: 'coral'   as const, description: 'Wrong/closed/duplicate' },
+];
+
+const KUBERBOOK_STATUSES = [
+    { value: 'new'       as const, label: 'New' },
+    { value: 'contacted' as const, label: 'Contacted' },
+    { value: 'follow_up' as const, label: 'Follow-up Sent' },
+    { value: 'qualified' as const, label: 'Qualified' },
+    { value: 'lost'      as const, label: 'Lost' },
+];
+
 interface LeadsModuleProps {
     brand: ProductBrand;
     onConvert?: () => void;
@@ -118,6 +144,20 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isProspectsOpen, setIsProspectsOpen] = useState(false);
+
+    // Intern filter: "mine" = my leads (default), "all" = everyone (admin only), UUID = specific intern
+    const [internFilter, setInternFilter] = useState<string>("mine");
+    // Status filter for solar leads
+    const [statusFilter, setStatusFilter] = useState<string>("all");
+
+    // Log Call modal
+    const [isCallModalOpen, setIsCallModalOpen] = useState(false);
+    const [callLogLead, setCallLogLead] = useState<Lead | null>(null);
+    const [callLogData, setCallLogData] = useState({
+        status: "no_answer" as LeadStatus,
+        call_notes: "",
+        next_follow_up: ""
+    });
 
     // New Lead Form State
     const [newLead, setNewLead] = useState({
@@ -240,6 +280,53 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
         }
     };
 
+    const handleLogCall = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!callLogLead) return;
+        setIsSubmitting(true);
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const prevCount = callLogLead.attempt_count ?? 0;
+            const newCount = prevCount + 1;
+
+            const updates: Record<string, unknown> = {
+                status: callLogData.status,
+                call_date: today,
+                call_notes: callLogData.call_notes,
+                attempt_count: newCount,
+            };
+
+            if (callLogData.next_follow_up) {
+                updates.next_follow_up = callLogData.next_follow_up;
+            }
+
+            const { error } = await supabase
+                .from("leads")
+                .update(updates)
+                .eq("id", callLogLead.id);
+
+            if (error) throw error;
+
+            await logActivity(
+                "Call Logged",
+                `"${callLogLead.customer_name}" — ${SOLAR_STATUSES.find(s => s.value === callLogData.status)?.label ?? callLogData.status} (attempt #${newCount})`,
+                employee?.username,
+                employee?.id
+            );
+
+            setIsCallModalOpen(false);
+            setCallLogLead(null);
+            setCallLogData({ status: "no_answer", call_notes: "", next_follow_up: "" });
+            showToast("Call logged successfully!");
+            fetchLeads();
+        } catch (error) {
+            console.error("Error logging call:", error);
+            showToast("Failed to log call", "error");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleAddLead = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSubmitting(true);
@@ -273,8 +360,9 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                 brand,
                 latitude: lat,
                 longitude: lng,
-                status: "new",
+                status: brand === 'Solar Vendor' ? "not_called" : "new",
                 created_by: employee?.id,
+                assigned_to: employee?.id,
                 notes: newLead.notes
             });
 
@@ -536,13 +624,30 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
         fetchLeads();
     }, [fetchLeads]);
 
-    const filteredLeads = leads.filter(lead =>
-        lead.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        lead.phone?.includes(searchQuery) ||
-        lead.email?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredLeads = leads.filter(lead => {
+        const q = searchQuery.toLowerCase();
+        const matchesSearch =
+            lead.customer_name.toLowerCase().includes(q) ||
+            lead.phone?.includes(searchQuery) ||
+            lead.email?.toLowerCase().includes(q) ||
+            lead.district?.toLowerCase().includes(q) ||
+            lead.state?.toLowerCase().includes(q);
+
+        const matchesIntern =
+            internFilter === "all" ? true :
+            internFilter === "mine" ? lead.assigned_to === employee?.id :
+            lead.assigned_to === internFilter;
+
+        const matchesStatus = statusFilter === "all" || lead.status === statusFilter;
+
+        return matchesSearch && matchesIntern && matchesStatus;
+    });
 
     const getStatusBadge = (status: LeadStatus) => {
+        // Solar statuses
+        const solarStatus = SOLAR_STATUSES.find(s => s.value === status);
+        if (solarStatus) return <Badge variant={solarStatus.badgeVariant}>{solarStatus.label}</Badge>;
+        // Kuberbook / legacy statuses
         switch (status) {
             case 'new': return <Badge variant="warning">New</Badge>;
             case 'contacted': return <Badge variant="sky">Contacted</Badge>;
@@ -585,22 +690,63 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
             </div>
 
             {/* Filters & Search */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                    <input
-                        type="text"
-                        placeholder="Search leads by name, phone, or email..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 bg-background-card border border-border/50 rounded-xl focus:border-pink/50 outline-none transition-all"
-                    />
+            <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Search */}
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
+                        <input
+                            type="text"
+                            placeholder="Search name, phone, district, state..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-background-card border border-border/50 rounded-xl focus:border-pink/50 outline-none transition-all"
+                        />
+                    </div>
+
+                    {/* Intern filter */}
+                    <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+                        <select
+                            value={internFilter}
+                            onChange={(e) => setInternFilter(e.target.value)}
+                            className="w-full pl-10 pr-8 py-2.5 bg-background-card border border-border/50 rounded-xl focus:border-pink/50 outline-none transition-all appearance-none cursor-pointer"
+                        >
+                            <option value="mine">My Leads</option>
+                            {isAdmin && <option value="all">All Interns</option>}
+                            {isAdmin && employees.filter(e => e.is_active).map(emp => (
+                                <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-background-card border border-border/50 rounded-xl text-text-secondary hover:text-text-primary transition-all">
-                        <Filter className="w-4 h-4" /> Filter
-                    </button>
-                </div>
+
+                {/* Solar-specific status filter pills */}
+                {brand === 'Solar Vendor' && (
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            onClick={() => setStatusFilter("all")}
+                            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${statusFilter === "all" ? 'bg-yellow text-background' : 'bg-background-card border border-border/50 text-text-secondary hover:text-text-primary'}`}
+                        >
+                            All
+                        </button>
+                        {SOLAR_STATUSES.map(s => (
+                            <button
+                                key={s.value}
+                                onClick={() => setStatusFilter(s.value)}
+                                className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${statusFilter === s.value ? 'bg-yellow text-background' : 'bg-background-card border border-border/50 text-text-secondary hover:text-text-primary'}`}
+                            >
+                                {s.label}
+                                {statusFilter !== s.value && (
+                                    <span className="ml-1.5 text-[10px] opacity-60">
+                                        {leads.filter(l => l.status === s.value && (internFilter === "all" ? true : internFilter === "mine" ? l.assigned_to === employee?.id : l.assigned_to === internFilter)).length}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Leads List */}
@@ -634,6 +780,24 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                 </div>
 
                                 <div className="space-y-2">
+                                    {/* Solar meta: district, state, installations */}
+                                    {brand === 'Solar Vendor' && (lead.district || lead.state || lead.installations) && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {(lead.district || lead.state) && (
+                                                <div className="flex items-center gap-1 text-[10px] text-text-secondary bg-border/20 px-2 py-0.5 rounded-md">
+                                                    <Building2 className="w-2.5 h-2.5" />
+                                                    {[lead.district, lead.state].filter(Boolean).join(', ')}
+                                                </div>
+                                            )}
+                                            {lead.installations != null && (
+                                                <div className="flex items-center gap-1 text-[10px] text-green bg-green/10 px-2 py-0.5 rounded-md">
+                                                    <Zap className="w-2.5 h-2.5" />
+                                                    {lead.installations} installs
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {lead.phone && (
                                         <div className="flex items-center justify-between gap-2 text-sm text-text-secondary group/copy">
                                             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -679,11 +843,44 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                     )}
                                 </div>
 
+                                {/* Solar call tracking */}
+                                {brand === 'Solar Vendor' && (lead.call_date || (lead.attempt_count ?? 0) > 0) && (
+                                    <div className="flex items-center gap-3 text-[10px]">
+                                        {lead.call_date && (
+                                            <div className="flex items-center gap-1 text-text-secondary">
+                                                <PhoneCall className="w-3 h-3 text-sky" />
+                                                Last: {format(new Date(lead.call_date), "MMM d")}
+                                            </div>
+                                        )}
+                                        {(lead.attempt_count ?? 0) > 0 && (
+                                            <div className={`flex items-center gap-1 ${(lead.attempt_count ?? 0) >= 3 ? 'text-red-400' : 'text-text-secondary'}`}>
+                                                <Hash className="w-3 h-3" />
+                                                {lead.attempt_count} attempt{lead.attempt_count !== 1 ? 's' : ''}
+                                                {(lead.attempt_count ?? 0) >= 3 && ' (max)'}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Call notes */}
+                                {brand === 'Solar Vendor' && lead.call_notes && (
+                                    <div className="text-[11px] text-text-secondary bg-border/10 px-3 py-2 rounded-lg line-clamp-2 italic">
+                                        &ldquo;{lead.call_notes}&rdquo;
+                                    </div>
+                                )}
+
                                 {/* Next Follow-up indicator */}
                                 {lead.next_follow_up && (
                                     <div className="flex items-center gap-2 text-xs text-purple bg-purple/10 px-2 py-1 rounded-lg w-fit">
                                         <Calendar className="w-3 h-3" />
-                                        Next: {format(new Date(lead.next_follow_up), "MMM d")}
+                                        Follow-up: {format(new Date(lead.next_follow_up), "MMM d")}
+                                    </div>
+                                )}
+
+                                {/* General notes */}
+                                {lead.notes && (
+                                    <div className="text-[11px] text-text-secondary line-clamp-2">
+                                        {lead.notes}
                                     </div>
                                 )}
                             </div>
@@ -708,23 +905,29 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                             onChange={(e) => handleUpdateStatus(lead.id, e.target.value as LeadStatus)}
                                             className="text-[10px] font-bold bg-background-card border border-border/50 rounded-lg px-2 py-1.5 outline-none text-text-primary cursor-pointer hover:border-pink/50 transition-colors"
                                         >
-                                            <option value="new">New</option>
-                                            <option value="contacted">Contacted</option>
-                                            <option value="follow_up">Follow-up Sent</option>
-                                            <option value="qualified">Qualified</option>
-                                            <option value="lost">Lost</option>
+                                            {brand === 'Solar Vendor' ? (
+                                                SOLAR_STATUSES.map(s => (
+                                                    <option key={s.value} value={s.value}>{s.label}</option>
+                                                ))
+                                            ) : (
+                                                KUBERBOOK_STATUSES.map(s => (
+                                                    <option key={s.value} value={s.value}>{s.label}</option>
+                                                ))
+                                            )}
                                         </select>
 
-                                        <select
-                                            value={lead.assigned_to || ""}
-                                            onChange={(e) => handleAssignLead(lead.id, e.target.value)}
-                                            className="text-[10px] font-bold bg-background-card border border-border/50 rounded-lg px-2 py-1.5 outline-none text-text-primary cursor-pointer hover:border-pink/50 transition-colors"
-                                        >
-                                            <option value="">Assign To...</option>
-                                            {employees.map(emp => (
-                                                <option key={emp.id} value={emp.id}>{emp.full_name}</option>
-                                            ))}
-                                        </select>
+                                        {isAdmin && (
+                                            <select
+                                                value={lead.assigned_to || ""}
+                                                onChange={(e) => handleAssignLead(lead.id, e.target.value)}
+                                                className="text-[10px] font-bold bg-background-card border border-border/50 rounded-lg px-2 py-1.5 outline-none text-text-primary cursor-pointer hover:border-pink/50 transition-colors"
+                                            >
+                                                <option value="">Assign To...</option>
+                                                {employees.map(emp => (
+                                                    <option key={emp.id} value={emp.id}>{emp.full_name}</option>
+                                                ))}
+                                            </select>
+                                        )}
                                     </div>
                                 </div>
 
@@ -752,6 +955,20 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
 
                                 {/* Action Buttons */}
                                 <div className="flex gap-2">
+                                    {/* Log Call button — Solar Vendor only */}
+                                    {brand === 'Solar Vendor' && (
+                                        <button
+                                            onClick={() => {
+                                                setCallLogLead(lead);
+                                                setCallLogData({ status: "no_answer", call_notes: "", next_follow_up: "" });
+                                                setIsCallModalOpen(true);
+                                            }}
+                                            className="flex-1 py-2 bg-sky/10 text-sky hover:bg-sky/20 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                                        >
+                                            <PhoneCall className="w-3 h-3" /> Log Call
+                                        </button>
+                                    )}
+
                                     <button
                                         onClick={() => {
                                             setSelectedLead(lead);
@@ -766,7 +983,7 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                                         <Calendar className="w-3 h-3" /> Follow-up
                                     </button>
 
-                                    {lead.status === 'qualified' && (
+                                    {(lead.status === 'qualified' || lead.status === 'demo_scheduled') && (
                                         <button
                                             onClick={() => {
                                                 setSelectedLead(lead);
@@ -1127,6 +1344,91 @@ export default function LeadsModule({ brand, onConvert }: LeadsModuleProps) {
                             className="flex-1 py-3 bg-purple text-white rounded-xl font-bold shadow-lg transition-all hover:bg-purple/90 disabled:opacity-50"
                         >
                             {isSubmitting ? 'Scheduling...' : 'Schedule Follow-up'}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Log Call Modal */}
+            <Modal
+                isOpen={isCallModalOpen}
+                onClose={() => { setIsCallModalOpen(false); setCallLogLead(null); }}
+                title="Log Call Attempt"
+                size="md"
+            >
+                <form onSubmit={handleLogCall} className="space-y-4 p-2">
+                    {callLogLead && (
+                        <div className="p-4 bg-border/10 rounded-xl space-y-1">
+                            <p className="text-sm font-bold text-text-primary">{callLogLead.customer_name}</p>
+                            <div className="flex items-center gap-3 text-xs text-text-secondary">
+                                {callLogLead.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{callLogLead.phone}</span>}
+                                {callLogLead.district && <span className="flex items-center gap-1"><Building2 className="w-3 h-3" />{callLogLead.district}</span>}
+                                <span className="flex items-center gap-1"><Hash className="w-3 h-3" />Attempt #{(callLogLead.attempt_count ?? 0) + 1}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-text-secondary uppercase">Call Outcome *</label>
+                        <select
+                            required
+                            value={callLogData.status}
+                            onChange={e => setCallLogData({ ...callLogData, status: e.target.value as LeadStatus })}
+                            className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-yellow/50 outline-none"
+                        >
+                            {SOLAR_STATUSES.filter(s => s.value !== 'not_called').map(s => (
+                                <option key={s.value} value={s.value}>{s.label} — {s.description}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="space-y-1">
+                        <label className="text-xs font-bold text-text-secondary uppercase">Call Notes</label>
+                        <textarea
+                            rows={3}
+                            placeholder="What did they say? Any concerns or interest level? (2–3 sentences)"
+                            value={callLogData.call_notes}
+                            onChange={e => setCallLogData({ ...callLogData, call_notes: e.target.value })}
+                            className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-yellow/50 outline-none resize-none text-sm"
+                        />
+                    </div>
+
+                    {(callLogData.status === 'interested' || callLogData.status === 'demo_scheduled') && (
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold text-text-secondary uppercase">Follow-Up Date *</label>
+                            <input
+                                required
+                                type="date"
+                                min={new Date().toISOString().split('T')[0]}
+                                value={callLogData.next_follow_up}
+                                onChange={e => setCallLogData({ ...callLogData, next_follow_up: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-background border border-border/50 rounded-xl focus:border-yellow/50 outline-none"
+                            />
+                            <p className="text-[10px] text-text-secondary italic">Set the date for the next call back.</p>
+                        </div>
+                    )}
+
+                    {callLogData.status === 'no_answer' && (callLogLead?.attempt_count ?? 0) >= 2 && (
+                        <div className="flex items-center gap-2 text-xs text-red-400 bg-red-400/10 px-3 py-2 rounded-lg">
+                            <PhoneMissed className="w-3 h-3 flex-shrink-0" />
+                            This will be attempt #{(callLogLead?.attempt_count ?? 0) + 1}. Stop at 3 for No Answer leads.
+                        </div>
+                    )}
+
+                    <div className="flex gap-4 pt-4">
+                        <button
+                            type="button"
+                            onClick={() => { setIsCallModalOpen(false); setCallLogLead(null); }}
+                            className="flex-1 py-3 bg-border/20 rounded-xl font-bold transition-all"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="flex-1 py-3 bg-yellow text-background rounded-xl font-bold shadow-lg transition-all hover:bg-yellow/90 disabled:opacity-50"
+                        >
+                            {isSubmitting ? 'Logging...' : 'Save Call Log'}
                         </button>
                     </div>
                 </form>
