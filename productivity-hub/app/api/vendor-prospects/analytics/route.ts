@@ -31,15 +31,16 @@ export async function GET(request: NextRequest) {
                 END as tier,
                 COUNT(*)::int as count
              FROM vendor_prospects ${stateFilter}
-             GROUP BY tier
+             GROUP BY
+                CASE
+                    WHEN installations >= 500 THEN '500+'
+                    WHEN installations >= 200 THEN '200-499'
+                    WHEN installations >= 100 THEN '100-199'
+                    WHEN installations >= 10 THEN '10-99'
+                    ELSE '<10'
+                END
              ORDER BY
-                CASE tier
-                    WHEN '500+' THEN 1
-                    WHEN '200-499' THEN 2
-                    WHEN '100-199' THEN 3
-                    WHEN '10-99' THEN 4
-                    ELSE 5
-                END`,
+                MIN(installations) DESC`,
             stateParams
         );
 
