@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
                         brand_name = EXCLUDED.brand_name,
                         scraped_at = EXCLUDED.scraped_at`;
 
-                const result = await sql.query(query, params);
-                inserted = result.rowCount ?? validRows.length;
+                await sql.query(query, params);
+                inserted = validRows.length;
             } catch (err: any) {
                 console.error("Batch insert error:", err);
                 errors.push(err.message || "Batch insert failed");
