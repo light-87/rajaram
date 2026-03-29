@@ -44,6 +44,16 @@ interface UploadResult {
     errors?: string[];
 }
 
+const UPLOAD_CHUNK_SIZE = 500;
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) {
+        chunks.push(arr.slice(i, i + size));
+    }
+    return chunks;
+}
+
 interface StateStats {
     state: string;
     count: number;
@@ -100,6 +110,7 @@ export default function VendorDataPage() {
     const [files, setFiles] = useState<File[]>([]);
     const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState<string>("");
     const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
     const [stateStats, setStateStats] = useState<StateStats[]>([]);
     const [totalVendors, setTotalVendors] = useState(0);
@@ -158,30 +169,49 @@ export default function VendorDataPage() {
 
         setIsUploading(true);
         setUploadResult(null);
+        setUploadProgress("");
+
+        const chunks = chunkArray(parsedRows, UPLOAD_CHUNK_SIZE);
+        let totalInserted = 0;
+        let totalSkipped = 0;
+        const allErrors: string[] = [];
 
         try {
-            const res = await fetch("/api/vendor-prospects/upload", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ rows: parsedRows }),
-            });
+            for (let i = 0; i < chunks.length; i++) {
+                setUploadProgress(`Uploading batch ${i + 1} of ${chunks.length}...`);
 
-            const json = await res.json();
+                const res = await fetch("/api/vendor-prospects/upload", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ rows: chunks[i] }),
+                });
 
-            if (res.ok) {
-                setUploadResult(json);
-                showToast(
-                    `Upload complete: ${json.inserted} vendors processed`,
-                    "success"
-                );
-                fetchStats(); // Refresh stats
-            } else {
-                showToast(json.error || "Upload failed", "error");
+                const json = await res.json();
+
+                if (!res.ok) {
+                    showToast(json.error || `Batch ${i + 1} failed`, "error");
+                    break;
+                }
+
+                totalInserted += json.inserted ?? 0;
+                totalSkipped += json.skipped ?? 0;
+                if (json.errors) allErrors.push(...json.errors);
             }
+
+            setUploadResult({
+                inserted: totalInserted,
+                updated: 0,
+                skipped: totalSkipped,
+                total: parsedRows.length,
+                errors: allErrors.length > 0 ? allErrors : undefined,
+            });
+            showToast(`Upload complete: ${totalInserted} vendors processed`, "success");
+            fetchStats();
         } catch {
             showToast("Upload failed", "error");
         } finally {
             setIsUploading(false);
+            setUploadProgress("");
         }
     };
 
@@ -416,7 +446,7 @@ export default function VendorDataPage() {
                                             {isUploading ? (
                                                 <>
                                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                    Uploading {parsedRows.length} vendors...
+                                                    {uploadProgress || `Uploading ${parsedRows.length} vendors...`}
                                                 </>
                                             ) : (
                                                 <>
