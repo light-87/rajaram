@@ -38,38 +38,44 @@ import { geocodeAddress, logActivity } from "@/lib/tools-utils";
 import { useEmployeeAuth } from "@/lib/employee-auth";
 
 // WhatsApp message templates for Solar Vendor leads
-const WHATSAPP_FIRST_MESSAGE = `Namaskar ji!
+const WHATSAPP_FIRST_MESSAGE = `GROW YOUR SOLAR BUSINESS. GET MORE CUSTOMERS. CREATE MORE REVENUE.
 
-Mi Vaibhav, aatach aapli phone var baat zali hoti.
-He gha Solar Sales Manager cha 5-minute demo video
+Still managing solar sales, installation tracking, materials, and paperwork manually?
 
-https://youtu.be/HIQxoJecSe4
+Solar Sales Manager helps Solar EPC & Installation Companies streamline operations and scale faster.
 
-Message for a live 10 mins demo!
+📈 GET MORE CUSTOMERS
+Track leads from first contact to final installation. Never lose opportunities.
 
-Yaat kaay aahe:
-- Automatic proposal generation ✅
-- Automatic invoice generator ✅
-- 16-step customer tracking -- ek pan step miss honar nahi
-- Employee management tab (See what each employee is working on)
-- 5 government documents (Completion File, Net Agreement, Commissioning Report, etc.)
-- PM Surya Ghar portal cha poora pipeline tracking
-- Disbursement dashboard -- paisa kuthe aadla aahe, ek nazaret
-- WhatsApp varun customer la status update
-- Admin aur Employee roles -- data surakshit rahto
+💼 CREATE MORE REVENUE
+Close deals faster with proposals, automation, and complete business tracking.
 
-Here is a sample quotation for you:
-https://www.saundaryaroof.homes/proposal/print?vendorCode=2025&customerId=b466f5ad-fd47-460c-a210-797fd69fc74b&quotationId=b264f978-2ba5-4e31-9e40-152af3c583ca
+Key Features:
 
-Phone var pan chalto, computer var pan. Kahi app download karayla nako.
+✓ Lead Management
+✓ Proposal Generator & Calculator
+✓ 18-Step Installation Tracking
+✓ Material Tracking
+✓ GST Invoices
+✓ WhatsApp Integration
+✓ Team Management
+✓ Government Documents
+✓ Site Photos & Checklists
 
-Shri Balaji Industries (Pune) January pasun vaprat aahet -- 100+ customers manage kele aahet
-Tyanchyashi baat karaychi asel tar number: 9049496040
+FREE Setup & Training Included
 
-Video bagha, 5 minute lagtil.
-Interest asel tar Vaibhav tumhala personally call karun live demo
+Start in 30 Minutes
 
-Kahi pan prashna asel tar ithe message kara!`;
+Available on Windows • Android • iOS
+
+Demo Video:
+https://youtu.be/r2c3NxcVBy4
+
+Reply "DEMO" to get started.
+
+📞 +91 89757 06582
+
+MORE CUSTOMERS. MORE REVENUE. MORE GROWTH.`;
 
 const WHATSAPP_FOLLOW_UP_MESSAGE = `Namaskar!
 Kahi diwasanpurvi Solar Sales Manager cha demo video pathavla hota. Baghu shakla ka?
