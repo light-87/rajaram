@@ -3,11 +3,28 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { BusinessClient, ProductBrand, SalesAgent } from "@/types/database";
-import { Edit2, DollarSign, MapPin, Search, Save, X, ExternalLink, Trash2, Clock, CheckCircle2 } from "lucide-react";
+import { Edit2, DollarSign, MapPin, Search, Save, X, ExternalLink, Trash2, Clock, CheckCircle2, Calendar, CalendarClock } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 import Modal from "@/components/ui/Modal";
 import { showToast } from "@/components/ui/Toast";
 import { logActivity } from "@/lib/tools-utils";
 import { useEmployeeAuth } from "@/lib/employee-auth";
+
+// Style + relative label for the "Next Payment" due date, matching the
+// overdue / due-soon convention used on the Payment Reminders page.
+function getDueInfo(dueDate: string) {
+    const due = new Date(dueDate);
+    due.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysUntil = differenceInDays(due, today);
+
+    if (daysUntil < 0) return { color: "text-red-400", label: `Overdue by ${Math.abs(daysUntil)}d` };
+    if (daysUntil === 0) return { color: "text-red-400", label: "Due today" };
+    if (daysUntil <= 7) return { color: "text-yellow", label: `Due in ${daysUntil}d` };
+    if (daysUntil <= 30) return { color: "text-sky", label: `Due in ${daysUntil}d` };
+    return { color: "text-text-primary", label: `Due in ${daysUntil}d` };
+}
 
 interface ClientsModuleProps {
     clients: BusinessClient[];
@@ -234,7 +251,9 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-                {filteredClients.map((client) => (
+                {filteredClients.map((client) => {
+                    const dueInfo = client.next_payment_due ? getDueInfo(client.next_payment_due) : null;
+                    return (
                     <div key={client.id} className={`card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all ${client.is_free_trial ? 'hover:border-purple/30 border-purple/10' : 'hover:border-sky/30'}`}>
                         <div className="flex items-start gap-4">
                             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${client.is_free_trial ? 'bg-purple/10 text-purple' : 'bg-sky/10 text-sky'}`}>
@@ -274,6 +293,20 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
                                         Agent: {client.agent_name} {client.agent_incentive ? `(₹${client.agent_incentive})` : ''}
                                     </p>
                                 )}
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[10px] text-text-secondary">
+                                    {(client.contract_start_date || client.created_at) && (
+                                        <span className="flex items-center gap-1">
+                                            <Calendar className="w-2.5 h-2.5" />
+                                            Added {format(new Date(client.contract_start_date || client.created_at), "MMM d, yyyy")}
+                                        </span>
+                                    )}
+                                    {client.is_trial_converted && client.trial_converted_at && (
+                                        <span className="flex items-center gap-1 text-green font-bold">
+                                            <CheckCircle2 className="w-2.5 h-2.5" />
+                                            Converted {format(new Date(client.trial_converted_at), "MMM d, yyyy")}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -290,6 +323,15 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
                                 <p className="text-[10px] font-bold text-text-secondary uppercase">MRR/Profit</p>
                                 <p className="text-lg font-bold text-sky">₹{Number(client.recurring_profit).toLocaleString()}</p>
                             </div>
+                            {dueInfo && client.next_payment_due && (
+                                <div className="text-center md:text-right">
+                                    <p className="text-[10px] font-bold text-text-secondary uppercase flex items-center gap-1 justify-center md:justify-end">
+                                        <CalendarClock className="w-2.5 h-2.5" /> Next Payment
+                                    </p>
+                                    <p className={`text-lg font-bold ${dueInfo.color}`}>{format(new Date(client.next_payment_due), "MMM d, yyyy")}</p>
+                                    <p className={`text-[10px] font-bold ${dueInfo.color}`}>{dueInfo.label}</p>
+                                </div>
+                            )}
 
                             <div className="flex gap-2 ml-auto">
                                 {client.is_free_trial && !client.is_trial_converted && (
@@ -322,7 +364,8 @@ export default function ClientsModule({ clients, onUpdate, brand }: ClientsModul
                             </div>
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </div>
 
             {/* Mark as Paid Modal */}
